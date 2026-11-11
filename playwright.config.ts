@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import { DEV_URL, env } from './src/config/env.ts';
+import { RUN_ID } from './src/config/run.ts';
 
 export default defineConfig({
   testDir: './tests',
@@ -13,6 +14,9 @@ export default defineConfig({
   timeout: 30_000,
   globalTimeout: env.CI ? 20 * 60_000 : 0,
   expect: { timeout: 5_000 },
+
+  // Shown in the HTML report, so the data a run made on dev can be traced to it.
+  metadata: { runId: RUN_ID },
 
   use: {
     baseURL: DEV_URL,
@@ -33,8 +37,10 @@ export default defineConfig({
   },
 
   projects: [
-    // Runs first: clears test users that earlier runs left behind (older than 6 hours).
-    { name: 'setup', testMatch: /\.setup\.ts$/ },
+    // Runs first: clears test users that earlier runs left behind. Its teardown, `cleanup`, runs last.
+    { name: 'setup', testMatch: /\.setup\.ts$/, teardown: 'cleanup' },
+    // Deletes any test user this run created and didn't delete, e.g. after a fixture teardown timed out.
+    { name: 'cleanup', testMatch: /\.teardown\.ts$/ },
     { name: 'chromium', use: { ...devices['Desktop Chrome'] }, dependencies: ['setup'] },
   ],
 });

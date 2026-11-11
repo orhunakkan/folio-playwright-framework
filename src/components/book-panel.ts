@@ -6,10 +6,34 @@ export class BookPanel {
   readonly bookmarksTab: Locator;
   /** One entry per bookmark, in the Bookmarks tab. */
   readonly bookmarks: Locator;
+  /** Named `Highlights <count>` once there are highlights, e.g. `Highlights 1`. */
+  readonly highlightsTab: Locator;
+  /** One entry per highlight on the page on screen, in the Highlights tab. */
+  readonly highlights: Locator;
+  /** The note box of the highlight being noted, and its Save button. */
+  readonly noteBox: Locator;
+  readonly saveNoteButton: Locator;
 
   constructor(root: Locator) {
     this.bookmarksTab = root.getByRole('tab', { name: 'Bookmarks' });
     this.bookmarks = root.getByRole('tabpanel', { name: 'Bookmarks' }).getByRole('listitem');
+    this.highlightsTab = root.getByRole('tab', { name: /^Highlights/ });
+    const highlightsPanel = root.getByRole('tabpanel', { name: /^Highlights/ });
+    this.highlights = highlightsPanel.getByRole('listitem');
+    this.noteBox = highlightsPanel.getByRole('textbox', { name: 'Note' });
+    this.saveNoteButton = highlightsPanel.getByRole('button', { name: 'Save' });
+  }
+
+  /** A highlight's entry, by the passage it highlights. */
+  highlight(passage: string): Locator {
+    return this.highlights.filter({ hasText: passage });
+  }
+
+  /** A highlight's note, shown as `Note: <text>`. */
+  note(passage: string): Locator {
+    return this.highlight(passage)
+      .getByRole('paragraph')
+      .filter({ hasText: /^Note: / });
   }
 
   /** A bookmark's entry, by the place it marks as the panel shows it, e.g. `Ch. 1 · p. 1`. */

@@ -2,8 +2,12 @@ import { expect, test as base } from '@playwright/test';
 import { TestApi, type CreateUserOptions, type TestUser } from '../api/test-api.ts';
 import { scanAccessibility, type AccessibilityViolation } from '../checks/accessibility.ts';
 import { watchConsoleErrors } from '../checks/console-errors.ts';
+import { FAKER_SEED } from '../config/run.ts';
+import { TestData, testSeed } from '../data/test-data.ts';
+import { HighlightsPage } from '../pages/highlights-page.ts';
 import { horizontalOverflow } from '../checks/layout.ts';
 import { ReaderPage } from '../pages/reader-page.ts';
+import { forgetUser, recordUser } from '../support/run-ledger.ts';
 
 export { expect } from '@playwright/test';
 
@@ -18,7 +22,11 @@ interface Fixtures {
    */
   testUser: TestUser;
 
+  /** Seeded factories for the data a test types into Folio, each value prefixed with the run ID. */
+  testData: TestData;
+
   readerPage: ReaderPage;
+  highlightsPage: HighlightsPage;
 
   /** Scans the page as it is now (WCAG 2.2 AA). Assert `expect(await scanAccessibility()).toEqual([])`. */
   scanAccessibility: () => Promise<AccessibilityViolation[]>;
@@ -40,19 +48,32 @@ export const test = base.extend<Fixtures>({
       const testApi = new TestApi(context.request);
       // Dev makes Pro users when no plan is given. Default to Free, so a test that needs Pro says so.
       const user = await testApi.createUser({ plan: 'free', ...testUserOptions, signedIn: true });
+      // In the run's ledger until it is deleted, so the cleanup project can catch it if this teardown never runs.
+      recordUser(user.username);
       testInfo.annotations.push({ type: 'test user', description: user.username });
 
       await use(user);
 
       // Runs whether the test passed or failed.
       await testApi.deleteUser(user.username);
+      forgetUser(user.username);
     },
     // Its own timeout, so time spent queueing for the test API doesn't count against the test's 30 s.
     { timeout: 60_000 },
   ],
 
+  testData: async ({}, use, testInfo) => {
+    const seed = testSeed(FAKER_SEED, testInfo.testId, testInfo.repeatEachIndex);
+    testInfo.annotations.push({ type: 'faker seed', description: `FAKER_SEED=${String(FAKER_SEED)}` });
+    await use(new TestData(seed));
+  },
+
   readerPage: async ({ page }, use) => {
     await use(new ReaderPage(page));
+  },
+
+  highlightsPage: async ({ page }, use) => {
+    await use(new HighlightsPage(page));
   },
 
   scanAccessibility: async ({ page }, use, testInfo) => {
