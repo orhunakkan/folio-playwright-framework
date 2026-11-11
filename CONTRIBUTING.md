@@ -13,6 +13,8 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every 
   cookie, and deletes it after the test. A test that only needs the session writes `testUser: _signedIn`. A test
   that needs Pro says `test.use({ testUserOptions: { plan: 'pro' } })`. Drive the sign-in form only in a test whose
   subject is signing in.
+- **Get text to type from the `testData` fixture** (`src/data/test-data.ts`), never a literal: it is seeded, and
+  starts with the run ID so it can be traced on dev. Add a factory method when a journey needs a new kind of value.
 - **Put locators and actions in page objects** (`src/pages/`) **and component objects** (`src/components/`), and
   inject them as fixtures in `src/fixtures/test.ts`. Methods say what the user does (`bookmarkThisPage()`), are
   wrapped in `test.step(…, { box: true })`, and never assert.

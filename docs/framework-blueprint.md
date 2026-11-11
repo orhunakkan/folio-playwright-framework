@@ -19,8 +19,8 @@ third-party testing, limited mocking, public repository.
 | | Assertions | Web-first, ARIA state, response status | Assertions retry on their own and check the user's view and the network | ✓ |
 | | Isolation | Each test owns its data; `fullyParallel` | Runs in any order, retries safely | ✓ |
 | | Setup | Users and data created over HTTP; the UI is driven only for the feature under test | Fast, focused tests | ✓ |
-| | Test data | Faker factories with a seed, plus a run ID prefix on created data | Realistic, reproducible, traceable on dev | |
-| | Cleanup | A teardown project deletes what the run created | Keeps the shared dev site clean | |
+| | Test data | Faker factories with a seed, plus a run ID prefix on created data | Realistic, reproducible, traceable on dev | ✓ |
+| | Cleanup | A teardown project deletes what the run created | Keeps the shared dev site clean | ✓ |
 | | Config | Typed env (zod), explicit timeouts, dev URL in one place | Fails fast and stays predictable | ✓ |
 | | Mocking | One small folder with only the five allowed cases | Follows AGENTS.md, nothing more | |
 | | Accessibility | Axe scan per journey | A11y is part of "done" | ✓ |
@@ -140,7 +140,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 5. CI | Create the public GitHub repository, add the secrets, add a GitHub Actions workflow in the pinned Playwright image (check its Node version against `engines`), `npm audit --audit-level=high` | The same tests pass on GitHub | ✓ |
 | 6. Docs | README quickstart, CONTRIBUTING, one ADR per Skipped row | A visitor gets from clone to a passing run with the README alone, and every Skipped row has its ADR | ✓ |
 | 7. Console errors | Auto fixture that fails a test on console errors or page errors; first check what dev logs today (e.g. the Cloudflare beacon) | Every test fails on an unexpected console or page error, and a deliberately broken page proves it | ✓ |
-| 8. Cleanup and test data | Teardown project that deletes what the run created; Faker factories with a seed; run ID prefix on created data | A run leaves nothing behind on dev, and the data it creates is traceable to the run | |
+| 8. Cleanup and test data | Teardown project that deletes what the run created; Faker factories with a seed; run ID prefix on created data | A run leaves nothing behind on dev, and the data it creates is traceable to the run | ✓ |
 | 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | |
 | 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, a `test:docker` script for WebKit where Playwright doesn't support the Linux distribution; the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | |
 | 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | |
@@ -261,3 +261,28 @@ How the framework uses it (step 3):
 - **Seen in passing, for step 10:** Firefox's first request to dev gets a `401` (the basic-auth challenge) before it
   sends the credentials; the navigation itself still answers 200. Dev sends no `Content-Security-Policy` header
   (for step 9).
+
+## Decided: cleanup and test data (step 8)
+
+- **What a run creates on dev:** test users, and what they own (bookmarks, highlights and notes, imported books,
+  sessions). Deleting a test user removes everything it owns, so cleanup only has to make sure no user is left.
+  API keys (checked with Anthropic and ElevenLabs) and email (a real mail) are out of scope.
+- **Usernames can't carry the run ID**: the test API makes them (`e2e-<12 hex>`) and takes no label. So each run
+  has a **ledger**, `playwright/.runs/<run ID>/`, with one empty file per live test user: `testUser` records the
+  user on create and forgets it on delete. One file per user means workers never write the same file. The ledger
+  lives outside `test-results/`, which Playwright empties at the start of a run.
+- **The `cleanup` project is the `setup` project's teardown**, so it runs after everything else. It deletes the
+  users left in this run's ledger. Checked on 2026-11-11 by killing a worker mid-run: its test failed with
+  `SIGKILL`, cleanup deleted the user it stranded, and a second delete answered 404.
+- **Setup also clears ledgers of interrupted runs** on the same machine, once they are an hour old; younger ones may
+  belong to a run still in progress. The test API's 6-hour sweep stays the backstop, for example for CI jobs.
+- **The run ID** is `ci-<GitHub run ID>-<attempt>` in CI (shared by every shard) and `local-<UTC time>-<4 hex>`
+  locally. `src/config/run.ts` sets it in `process.env` when the config first loads, so every worker inherits the
+  runner's ID; it must stay imported by `playwright.config.ts`. It is in the HTML report's metadata.
+- **Faker data is seeded per test**: a hash of the run's base seed, the test ID and the repeat index, so a test gets
+  the same data whatever worker or order it runs in. The base seed is random per run, or `FAKER_SEED`; each test
+  notes it. Every value starts with `[<run ID>]`. `meta/test-data.test.ts` checks both.
+- **The first consumer is a notes journey** (`tests/notes.spec.ts`): select a passage, press Note (which saves the
+  highlight, `POST /account/highlights/new`), type the note, Save (`POST /account/highlights/<id>` → 200), then find
+  it after a reload and in Account → Highlights. The selection toolbar also has Ask about this, Explain and
+  Translate, which are third-party: tests never press them.

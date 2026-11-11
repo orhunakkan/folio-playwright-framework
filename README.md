@@ -22,7 +22,7 @@ cp .env.example .env   # then fill in the three values (see below)
 npm test
 ```
 
-`npm test` runs every spec against dev and ends with a summary such as `8 passed`, with no failures.
+`npm test` runs every spec against dev and ends with a summary such as `12 passed`, with no failures.
 `npx playwright show-report` opens the HTML report.
 
 ### Credentials
@@ -62,18 +62,22 @@ Without them you can still run `npm run check` (typecheck, lint, format and the 
 
 | Folder | What is in it |
 | --- | --- |
-| `tests/` | Specs, one user journey per file; `*.setup.ts` runs first (it sweeps old test users) |
+| `tests/` | Specs, one user journey per file; `*.setup.ts` runs first and `*.teardown.ts` last (test user cleanup) |
 | `src/fixtures/test.ts` | The `test` and `expect` every spec imports, with the framework's fixtures |
 | `src/pages/`, `src/components/` | Page and component objects: locators and user-intent methods, no assertions |
 | `src/api/` | The client for Folio's test API |
+| `src/data/` | Seeded Faker factories for the data tests type into Folio |
 | `src/checks/` | The accessibility scan, the horizontal overflow check, and the console error check |
-| `src/config/env.ts` | The dev URL, and the typed (zod) env |
+| `src/config/` | The dev URL, the typed (zod) env, and the run ID |
 | `meta/` | Tests of the Playwright config itself, run with `node --test` |
 
 Some of the choices behind it:
 
 - **Every test gets its own fresh user** from Folio's test API, signed in by cookie, and deleted afterwards. Tests
-  never use the sign-up form or real accounts, so they run in any order and in parallel.
+  never use the sign-up form or real accounts, so they run in any order and in parallel. A cleanup project deletes
+  any user a run left behind, so a run leaves nothing on dev.
+- **Test data is seeded and traceable.** Text a test types comes from Faker, starts with the run's ID (shown in
+  the report), and comes out the same again with `FAKER_SEED=<seed from the report> npm test`.
 - **Role and label locators only**, enforced by ESLint, so the tests read like a user and catch accessibility gaps.
 - **Every journey ends with an axe scan** (WCAG 2.2 AA) and a check that the page doesn't scroll sideways.
 - **Every test fails on a console error or an uncaught page error**, through an automatic fixture.
