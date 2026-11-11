@@ -15,7 +15,7 @@ if (files.length === 0) {
   process.exit(2);
 }
 
-const found = findSecrets(paths, SECRETS);
+const found = findSecrets(files, SECRETS);
 for (const { name, file } of found) console.error(`Secret found: ${name} in ${file}`);
 if (found.length > 0) {
   console.error('Do not upload or publish these files. Find what wrote the secret, and redact it there.');

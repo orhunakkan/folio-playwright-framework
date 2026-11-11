@@ -22,14 +22,15 @@ export class LibraryPage {
     this.page = page;
     const main = page.getByRole('main');
     const navigation = page.getByRole('complementary', { name: 'Site navigation' });
+    const filterGroup = main.getByRole('group', { name: 'Filter books' });
     this.heading = main.getByRole('heading', { level: 1 });
     this.series = main.getByRole('region');
-    this.filters = main.getByRole('group', { name: 'Filter books' }).getByRole('button');
-    this.selectedFilters = main.getByRole('group', { name: 'Filter books' }).getByRole('button', { pressed: true });
+    this.filters = filterGroup.getByRole('button');
+    this.selectedFilters = filterGroup.getByRole('button', { pressed: true });
     this.books = this.series.getByRole('listitem');
     this.changingParts = [
       main.getByRole('complementary', { name: 'Library stats' }),
-      main.getByRole('group', { name: 'Filter books' }),
+      filterGroup,
       this.series,
       navigation.getByRole('region', { name: 'Collections' }).getByRole('list'),
       navigation.getByRole('region', { name: 'Featured series' }).getByRole('list'),

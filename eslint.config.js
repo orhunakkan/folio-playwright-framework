@@ -5,6 +5,9 @@ import playwright from 'eslint-plugin-playwright';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
+/** Code that runs under Playwright: the specs, the framework in src/, and the BDD steps. */
+const PLAYWRIGHT_CODE = ['tests/**/*.ts', 'src/**/*.ts', 'bdd/**/*.ts'];
+
 export default defineConfig(
   globalIgnores(['node_modules/', 'playwright-report/', 'test-results/', 'blob-report/', 'playwright/.cache/', '.features-gen/', 'bdd-report/']),
 
@@ -31,7 +34,7 @@ export default defineConfig(
   },
 
   {
-    files: ['tests/**/*.ts', 'src/**/*.ts', 'bdd/**/*.ts'],
+    files: PLAYWRIGHT_CODE,
     extends: [playwright.configs['flat/recommended']],
     rules: {
       // Role and label locators only: resilient, and accessible by design.
@@ -60,7 +63,7 @@ export default defineConfig(
 
   {
     // Mocking only for AGENTS.md's five cases, and only through src/mocking/, so every fake is in one small folder.
-    files: ['tests/**/*.ts', 'src/**/*.ts', 'bdd/**/*.ts'],
+    files: PLAYWRIGHT_CODE,
     ignores: ['src/mocking/**'],
     rules: {
       'no-restricted-syntax': [

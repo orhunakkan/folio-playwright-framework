@@ -30,15 +30,17 @@ test('the BDD run tests the generated scenarios, not tests/', () => {
 
 test('the BDD run has the same projects, with their grep, so @api and @http scenarios run once', () => {
   const projects = bdd.projects ?? [];
+  const mainProjects = main.projects ?? [];
   assert.deepEqual(
     projects.map(({ name }) => name),
-    (main.projects ?? []).map(({ name }) => name),
+    mainProjects.map(({ name }) => name),
   );
   for (const project of projects) {
-    const original = (main.projects ?? []).find(({ name }) => name === project.name);
-    assert.deepEqual(project.grep, original?.grep, `project "${project.name ?? ''}" keeps its grep`);
-    assert.deepEqual(project.grepInvert, original?.grepInvert, `project "${project.name ?? ''}" keeps its grepInvert`);
-    assert.equal(project.use?.trace, undefined, `project "${project.name ?? ''}" must not turn tracing back on`);
+    const name = project.name ?? '';
+    const original = mainProjects.find((candidate) => candidate.name === project.name);
+    assert.deepEqual(project.grep, original?.grep, `project "${name}" keeps its grep`);
+    assert.deepEqual(project.grepInvert, original?.grepInvert, `project "${name}" keeps its grepInvert`);
+    assert.equal(project.use?.trace, undefined, `project "${name}" must not turn tracing back on`);
   }
 });
 

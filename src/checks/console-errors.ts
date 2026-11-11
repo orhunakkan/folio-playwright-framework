@@ -35,9 +35,11 @@ export function watchConsoleErrors(context: BrowserContext, testInfo: TestInfo):
     errors.push(`page error: ${webError.error().message}`);
   });
 
+  const hasAnnotation = (type: string): boolean => testInfo.annotations.some((annotation) => annotation.type === type);
+
   return () =>
     errors.filter((error) => {
-      const known = KNOWN_CONSOLE_ERRORS.find(({ pattern, onlyWhen }) => pattern.test(error) && (onlyWhen === undefined || testInfo.annotations.some(({ type }) => type === onlyWhen)));
+      const known = KNOWN_CONSOLE_ERRORS.find(({ pattern, onlyWhen }) => pattern.test(error) && (onlyWhen === undefined || hasAnnotation(onlyWhen)));
       if (known) testInfo.annotations.push({ type: 'known console error', description: known.reason });
       return !known && !expectedByTheTest(error, testInfo);
     });

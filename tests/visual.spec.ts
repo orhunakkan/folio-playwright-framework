@@ -4,27 +4,27 @@ import { expect, test } from '../src/fixtures/test.ts';
 // --update-snapshots`. CI never writes them. Parts that change without a design change are masked; the page
 // objects list them.
 test.describe('Visual', { tag: ['@regression', '@visual'] }, () => {
-  test('the home page looks as it did', async ({ homePage }) => {
+  test('the home page looks as it did', async ({ page, homePage }) => {
     await homePage.open();
     await expect(homePage.heading).toBeVisible();
 
-    await expect(homePage.page).toHaveScreenshot('home.png', { fullPage: true, mask: homePage.changingParts });
+    await expect(page).toHaveScreenshot('home.png', { fullPage: true, mask: homePage.changingParts });
   });
 
-  test('the library looks as it did', async ({ libraryPage }) => {
+  test('the library looks as it did', async ({ page, libraryPage }) => {
     await libraryPage.open();
     await expect(libraryPage.series).not.toHaveCount(0);
 
     // The viewport, not the full page: the shelves grow with dev's catalogue, and would change the page's height.
-    await expect(libraryPage.page).toHaveScreenshot('library.png', { mask: libraryPage.changingParts });
+    await expect(page).toHaveScreenshot('library.png', { mask: libraryPage.changingParts });
   });
 
-  test('a change to the design fails the visual check', async ({ homePage }, testInfo) => {
+  test('a change to the design fails the visual check', async ({ page, homePage }, testInfo) => {
     test.skip(['all', 'changed'].includes(testInfo.config.updateSnapshots), 'Updating baselines would save this deliberately wrong screenshot as the home page baseline');
     test.fail(true, 'The heading is recoloured on purpose, so the screenshot must not match the baseline');
     await homePage.open();
-    await homePage.page.addStyleTag({ content: 'h1 { color: rgb(255, 0, 0) !important; }' });
+    await page.addStyleTag({ content: 'h1 { color: rgb(255, 0, 0) !important; }' });
 
-    await expect(homePage.page).toHaveScreenshot('home.png', { fullPage: true, mask: homePage.changingParts });
+    await expect(page).toHaveScreenshot('home.png', { fullPage: true, mask: homePage.changingParts });
   });
 });

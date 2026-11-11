@@ -36,7 +36,7 @@ function loadEnv(): Env {
   if (!result.success) {
     // Name the bad variables only. Never echo their values: they are secrets.
     const names = [...new Set(result.error.issues.map((issue) => issue.path.join('.')))];
-    throw new Error(`Missing or invalid environment variables: ${names.join(', ')}.\n` + 'Copy .env.example to .env and fill it in (CI reads them from GitHub Secrets).');
+    throw new Error(`Missing or invalid environment variables: ${names.join(', ')}.\nCopy .env.example to .env and fill it in (CI reads them from GitHub Secrets).`);
   }
   return result.data;
 }

@@ -49,7 +49,7 @@ export const matchers = {
     return {
       name: 'toBeSignedIn',
       pass,
-      message: () => `${this.utils.matcherHint('toBeSignedIn', undefined, '', { isNot: this.isNot })}\n\n` + `Expected: ${this.isNot ? 'not ' : ''}${expected}\nReceived: ${actual}`,
+      message: () => `${this.utils.matcherHint('toBeSignedIn', undefined, '', { isNot: this.isNot })}\n\nExpected: ${this.isNot ? 'not ' : ''}${expected}\nReceived: ${actual}`,
     };
   },
 

@@ -4,7 +4,7 @@ import { AccountExportSchema, ErrorSchema } from '../../src/api/schemas.ts';
 import { expect, Given, Then, When } from './fixtures.ts';
 import type { Book } from './parameter-types.ts';
 
-/** The first sentence of Pride and Prejudice, chapter 1, page 1, which highlights are made from. */
+/** The first words of Pride and Prejudice, chapter 1, page 1, which highlights are made from. */
 const FIRST_WORDS = 'It is a tr';
 
 // Folio's own JSON endpoints, through src/api/folio-api.ts. Never attach or print an account export: it holds IP
