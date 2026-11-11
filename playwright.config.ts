@@ -26,7 +26,16 @@ export default defineConfig({
   // Explicit timeouts, so behaviour doesn't drift with Playwright's defaults.
   timeout: 30_000,
   globalTimeout: env.CI ? 20 * 60_000 : 0,
-  expect: { timeout: 5_000 },
+  expect: {
+    timeout: 5_000,
+    // Screenshots in CSS pixels, so a phone's baseline isn't 2.6 times the size.
+    toHaveScreenshot: { scale: 'css' },
+  },
+
+  // Visual baselines: one per project, made only in the pinned image (`npm test -- --update-snapshots`). Every run
+  // is in that image, so the path needs no platform. CI never writes one: a missing baseline fails there.
+  snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}-{projectName}{ext}',
+  updateSnapshots: env.CI ? 'none' : 'missing',
 
   // Shown in the HTML report, so the data a run made on dev can be traced to it.
   metadata: { runId: RUN_ID },

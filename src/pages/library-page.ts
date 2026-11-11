@@ -1,0 +1,33 @@
+import { test, type Locator, type Page } from '@playwright/test';
+
+/** The library, at /library: every book, shelved by series, with collections and featured series beside it. */
+export class LibraryPage {
+  readonly page: Page;
+  readonly heading: Locator;
+  /** One region per series on the shelves, named after the series, e.g. `Jane Austen`. */
+  readonly series: Locator;
+  /**
+   * Parts that follow dev's catalogue rather than the page's design: the counts, the collections, the featured
+   * series, the filters and the shelves. Visual tests mask them, so adding a book to dev doesn't fail them.
+   */
+  readonly changingParts: Locator[];
+
+  constructor(page: Page) {
+    this.page = page;
+    const main = page.getByRole('main');
+    const navigation = page.getByRole('complementary', { name: 'Site navigation' });
+    this.heading = main.getByRole('heading', { level: 1 });
+    this.series = main.getByRole('region');
+    this.changingParts = [
+      main.getByRole('complementary', { name: 'Library stats' }),
+      main.getByRole('group', { name: 'Filter books' }),
+      this.series,
+      navigation.getByRole('region', { name: 'Collections' }).getByRole('list'),
+      navigation.getByRole('region', { name: 'Featured series' }).getByRole('list'),
+    ];
+  }
+
+  async open(): Promise<void> {
+    await test.step('open the library', () => this.page.goto('/library'), { box: true });
+  }
+}

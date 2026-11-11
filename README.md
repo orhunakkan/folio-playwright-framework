@@ -67,6 +67,7 @@ run behaves and looks the same on macOS, on any Linux distribution, and in CI. Y
 | `npm test -- --grep @smoke` | Only tests tagged `@smoke` (or `@regression`, or `@http`) |
 | `npm test -- --project=phone` | One project only |
 | `npm test -- tests/bookmarks.spec.ts --repeat-each=5` | One spec, five times over, to show it isn't flaky |
+| `npm test -- --grep @visual --update-snapshots` | Remakes the visual baselines, after a deliberate design change |
 | `npm run test:ui` | UI mode, at <http://localhost:9324> |
 | `npx playwright show-report` | Opens the last run's HTML report |
 | `node scripts/scan-secrets.ts <folder>` | Fails if a secret value is in the folder's files, even inside zips |
@@ -100,6 +101,9 @@ Some of the choices behind it:
 - **Role and label locators only**, enforced by ESLint, so the tests read like a user and catch accessibility gaps.
 - **Every journey ends with an axe scan** (WCAG 2.2 AA) and a check that the page doesn't scroll sideways.
 - **Every test fails on a console error or an uncaught page error**, checked by the framework's `context` fixture.
+- **Visual checks** (`@visual`) compare the home page and the library with baselines in `tests/__screenshots__/`,
+  one per project, with the parts that change without a design change masked. Every run is in the same image, so
+  a screenshot comes out the same on any machine and in CI.
 - **HTTP-level checks** (`@http`), such as security headers and the session cookie, run once in their own project,
   without a browser.
 - **No traces in CI, and redacted API errors.** Traces record request headers, which hold dev's credentials, so a

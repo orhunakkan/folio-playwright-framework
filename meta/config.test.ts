@@ -1,6 +1,7 @@
 // Checks the Playwright config itself, with Node's test runner: `npm run test:meta`.
 // Each test file runs in its own process, so setting env vars before the import is safe.
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 // Placeholders, set before the config loads. Real values in .env never override variables already set.
@@ -28,4 +29,10 @@ test('basic-auth credentials are only ever sent to dev', () => {
   const credentials = [config.use.httpCredentials ?? []].flat();
   assert.ok(credentials.length > 0, 'httpCredentials must be set');
   for (const { origin } of credentials) assert.equal(origin, DEV_URL);
+});
+
+test('CI never writes visual baselines: they are made in the pinned image, and a missing one fails', () => {
+  assert.equal(config.updateSnapshots, 'none');
+  const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  assert.doesNotMatch(workflow, /update-snapshots|-u\b/);
 });

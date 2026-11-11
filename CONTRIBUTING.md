@@ -33,6 +33,10 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every 
 - **Every test fails on a console error or an uncaught page error.** The framework's `context` fixture checks it.
   An error Folio really logs goes in `KNOWN_CONSOLE_ERRORS` in `src/checks/console-errors.ts`, as narrowly as
   possible.
+- **Visual baselines are made in the pinned image only**: `npm test -- --grep @visual --update-snapshots`, never
+  `npx playwright test`, whose browsers and fonts differ. Remake them only for a deliberate design change, look at
+  every changed image before committing it, and mask anything that changes without a design change (the page
+  object's `changingParts`). CI never writes a baseline; a missing one fails there.
 - **Skip only with a condition and a reason**: `test.skip(condition, 'why')`. ESLint rejects a bare `test.skip`.
 
 Explore the real dev site before writing a selector or an assertion. Don't guess text or behaviour.

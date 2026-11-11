@@ -5,6 +5,8 @@ import { watchConsoleErrors } from '../checks/console-errors.ts';
 import { FAKER_SEED } from '../config/run.ts';
 import { TestData, testSeed } from '../data/test-data.ts';
 import { HighlightsPage } from '../pages/highlights-page.ts';
+import { HomePage } from '../pages/home-page.ts';
+import { LibraryPage } from '../pages/library-page.ts';
 import { horizontalOverflow } from '../checks/layout.ts';
 import { ReaderPage } from '../pages/reader-page.ts';
 import { redactErrors } from '../support/redact.ts';
@@ -26,6 +28,8 @@ interface Fixtures {
   /** Seeded factories for the data a test types into Folio, each value prefixed with the run ID. */
   testData: TestData;
 
+  homePage: HomePage;
+  libraryPage: LibraryPage;
   readerPage: ReaderPage;
   highlightsPage: HighlightsPage;
 
@@ -83,6 +87,14 @@ export const test = base.extend<Fixtures>({
     const seed = testSeed(FAKER_SEED, testInfo.testId, testInfo.repeatEachIndex);
     testInfo.annotations.push({ type: 'faker seed', description: `FAKER_SEED=${String(FAKER_SEED)}` });
     await use(new TestData(seed));
+  },
+
+  homePage: async ({ page }, use) => {
+    await use(new HomePage(page));
+  },
+
+  libraryPage: async ({ page }, use) => {
+    await use(new LibraryPage(page));
   },
 
   readerPage: async ({ page }, use) => {

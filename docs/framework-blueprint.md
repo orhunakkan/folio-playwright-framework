@@ -414,3 +414,26 @@ How the framework uses it (step 3):
   others. It is never published to GitHub Pages.
 - **Spec names reach the shell through an environment variable**, not a `${{ }}` expression in the script, so a
   file name can't inject a command.
+
+## Decided: visual (step 13)
+
+- **`tests/visual.spec.ts`** (`@regression @visual`) screenshots the home page (full page) and the library
+  (viewport), signed out, in every browser project. Baselines are in `tests/__screenshots__/`, one per project
+  (`<name>-<project>.png`, no platform in the path: every run is in the pinned image). Screenshots are in CSS
+  pixels (`scale: 'css'`), which keeps the phone's full home page at about 0.5 MB instead of 2.6 times that.
+  The eight baselines come to about 2.6 MB.
+- **Comparison is exact** (Playwright's default: no pixel tolerance). The image makes the browsers, fonts and
+  libraries the same everywhere, so any difference is real. Two screenshots of each page taken seconds apart were
+  byte for byte the same (2026-11-11), and the spec passed `--repeat-each=5` in every project.
+- **Masked, because they change without a design change** (the page objects' `changingParts`): on the home page,
+  the founding-member places left ("100 of the first 100 left") and the copyright year; on the library, everything
+  that follows dev's catalogue: the counts, collections, featured series, filters and shelves. That masks most of
+  the library's content, on purpose: books are added to dev as real data, and a new book must not turn CI red. What
+  is left is the library's frame (navigation, search, heading, text, footer area). The library is screenshotted at
+  viewport size, because the shelves change the page's height.
+- **A deliberate change fails them**, and a test keeps proving it: it recolours the home page heading and is marked
+  `test.fail`, like the console error proofs; its failure writes the expected, actual and diff images. It is
+  skipped when baselines are being updated, or it would save its wrong screenshot as the baseline.
+- **CI never writes baselines**: `updateSnapshots` is `none` in CI (a missing baseline fails) and `missing`
+  locally; `meta/config.test.ts` checks that and that `ci.yml` never passes `--update-snapshots`. Diff images go
+  into the reports, which are scanned for secrets like everything else; the screenshots show signed-out pages.
