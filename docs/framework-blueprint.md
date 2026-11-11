@@ -131,16 +131,24 @@ Notes:
 
 Build one thin slice that works end to end, then widen it. Each step ends in something that runs.
 
-| Step | What | Done when |
-| --- | --- | --- |
-| 1. Skeleton | `git init`, `package.json`, `npm install`, `tsconfig.json`, ESLint + Prettier, `playwright.config.ts` with the typed zod env, `.env.example` | `npm run lint` passes and `npx playwright test` runs (zero tests) |
-| 2. First test | One test that opens dev's home page through basic auth and checks the heading | A green test against the real dev site |
-| 3. Test users | Test API client, `testUser` fixture (create → sign in by cookie → delete), the sweep in a setup project | A signed-in test passes, and its user is gone afterwards |
-| 4. First real journey | First page objects, one journey (e.g. bookmarks), axe scan, overflow check | A full spec in the style the rest will follow |
-| 5. CI | Create the public GitHub repository, add the secrets, add a GitHub Actions workflow in the pinned Playwright image (check its Node version against `engines`), `npm audit --audit-level=high` | The same tests pass on GitHub |
+| Step | What | Done when | Done |
+| --- | --- | --- | --- |
+| 1. Skeleton | `git init`, `package.json`, `npm install`, `tsconfig.json`, ESLint + Prettier, `playwright.config.ts` with the typed zod env, `.env.example` | `npm run lint` passes and `npx playwright test` runs (zero tests) | ✓ |
+| 2. First test | One test that opens dev's home page through basic auth and checks the heading | A green test against the real dev site | ✓ |
+| 3. Test users | Test API client, `testUser` fixture (create → sign in by cookie → delete), the sweep in a setup project | A signed-in test passes, and its user is gone afterwards | ✓ |
+| 4. First real journey | First page objects, one journey (e.g. bookmarks), axe scan, overflow check | A full spec in the style the rest will follow | ✓ |
+| 5. CI | Create the public GitHub repository, add the secrets, add a GitHub Actions workflow in the pinned Playwright image (check its Node version against `engines`), `npm audit --audit-level=high` | The same tests pass on GitHub | ✓ |
+| 6. Docs | README quickstart, CONTRIBUTING, one ADR per Skipped row | A visitor gets from clone to a passing run with the README alone, and every Skipped row has its ADR | |
+| 7. Console errors | Auto fixture that fails a test on console errors or page errors; first check what dev logs today (e.g. the Cloudflare beacon) | Every test fails on an unexpected console or page error, and a deliberately broken page proves it | |
+| 8. Cleanup and test data | Teardown project that deletes what the run created; Faker factories with a seed; run ID prefix on created data | A run leaves nothing behind on dev, and the data it creates is traceable to the run | |
+| 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | |
+| 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, a `test:docker` script for WebKit where Playwright doesn't support the Linux distribution; the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | |
+| 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | |
 
-After step 5 the foundation is done; more journeys, devices, browsers, visual tests and reports follow the patterns
-from steps 1–4. Keep the repository local until step 5, so the first public commit is already in good shape.
+Steps 1–5 built the foundation, and steps 6–11 finish the Core tier. The mocking folder is not a step: it is built
+with the first test that needs one of the five allowed cases. The Showcase rows follow Core. More journeys follow
+the patterns from steps 1–4 throughout. The repository stayed local until step 5, so the first public commit was
+already in good shape.
 
 ## Open questions
 
