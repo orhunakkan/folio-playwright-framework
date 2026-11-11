@@ -9,3 +9,8 @@ test('home page opens through basic auth and shows its heading', { tag: '@smoke'
   expect(response?.status()).toBe(200);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Read it. Hear it. Ask it.');
 });
+
+// Burn-in proof: fails on its fourth repeat only, as a flaky test would. Never merged.
+test('flaky on purpose', { tag: '@regression' }, ({}, testInfo) => {
+  expect(testInfo.repeatEachIndex).not.toBe(3);
+});
