@@ -1,5 +1,7 @@
 import { expect, test } from '../src/fixtures/test.ts';
 
+// Burn-in proof (throwaway pull request, never merged).
+
 test('home page opens through basic auth and shows its heading', { tag: '@smoke' }, async ({ page }) => {
   const response = await page.goto('/');
 
