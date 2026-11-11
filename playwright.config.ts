@@ -19,8 +19,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: env.CI,
   retries: env.CI ? 2 : 0,
-  // In CI, `github` turns failures into annotations on the pull request.
-  reporter: env.CI ? [['list'], ['github'], ['html', { open: 'never' }]] : [['list'], ['html', { open: 'never' }]],
+  // In CI, `github` turns failures into annotations on the pull request, and each shard writes a blob report that
+  // the report job merges into one HTML report (merge.config.ts).
+  reporter: env.CI ? [['list'], ['github'], ['blob']] : [['list'], ['html', { open: 'never' }]],
 
   // Explicit timeouts, so behaviour doesn't drift with Playwright's defaults.
   timeout: 30_000,

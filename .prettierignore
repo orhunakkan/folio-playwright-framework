@@ -2,6 +2,7 @@ package-lock.json
 playwright-report/
 test-results/
 blob-report/
+blob-reports/
 playwright/.cache/
 
 # Markdown is hand-formatted (compact tables)
