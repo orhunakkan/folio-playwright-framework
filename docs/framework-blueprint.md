@@ -33,7 +33,7 @@ third-party testing, limited mocking, public repository.
 | | CI | GitHub-hosted runners, pinned image, sharding + merged report, PR gate, nightly run | Public, fast, trustworthy | |
 | | Reporting | HTML report published to GitHub Pages | Visitors can see real results | |
 | | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright | |
-| | Docs | README quickstart, CONTRIBUTING, ADRs | Shows judgment, not just code | |
+| | Docs | README quickstart, CONTRIBUTING, ADRs | Shows judgment, not just code | ✓ |
 | **Showcase** | Visual | Screenshot tests on stable pages (home, catalogue) with masking | Catches visual regressions | |
 | | API layer | Typed API client + zod response schemas | Shows API testing alongside UI | |
 | | Assertions | A few custom matchers (`toBeSignedIn()`) | Domain-language tests | |
@@ -41,14 +41,14 @@ third-party testing, limited mocking, public repository.
 | | Security | Header checks (`@http`) | Cheap, meaningful checks | |
 | | Flakiness | Burn-in (`--repeat-each`) on changed specs in PRs | Stops flaky tests at the door | |
 | | AI | Playwright test agents (planner, healer) with docs | Fits an "agentic" story | |
-| **Skipped (with ADR)** | Third parties | No tests, no stubs | AGENTS.md rule | |
-| | Other mocking | No HAR replay or extra mocks | AGENTS.md rule | |
-| | Allure | HTML report only | One good reporter beats two | |
-| | Component testing | Not included | No access to Folio's source here | |
-| | E2E coverage | Not included | The dev site isn't an instrumented build | |
-| | DB reset or guard | Not included | It's a shared deployed environment | |
-| | Bundle leak check | Not included | Belongs in Folio's own repo | |
-| | Notifications | Not included | No team to notify | |
+| **Skipped (with ADR)** | Third parties | No tests, no stubs | AGENTS.md rule | ✓ |
+| | Other mocking | No HAR replay or extra mocks | AGENTS.md rule | ✓ |
+| | Allure | HTML report only | One good reporter beats two | ✓ |
+| | Component testing | Not included | No access to Folio's source here | ✓ |
+| | E2E coverage | Not included | The dev site isn't an instrumented build | ✓ |
+| | DB reset or guard | Not included | It's a shared deployed environment | ✓ |
+| | Bundle leak check | Not included | Belongs in Folio's own repo | ✓ |
+| | Notifications | Not included | No team to notify | ✓ |
 | **Outcomes** | CI health | Always green, no flaky tests | A red badge undoes everything | |
 | | Speed | Full run in about 10 minutes or less | People actually run it | |
 | | First run | Clone → `npm run setup` → `npm test` → passing | Easy to evaluate | |
@@ -138,7 +138,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 3. Test users | Test API client, `testUser` fixture (create → sign in by cookie → delete), the sweep in a setup project | A signed-in test passes, and its user is gone afterwards | ✓ |
 | 4. First real journey | First page objects, one journey (e.g. bookmarks), axe scan, overflow check | A full spec in the style the rest will follow | ✓ |
 | 5. CI | Create the public GitHub repository, add the secrets, add a GitHub Actions workflow in the pinned Playwright image (check its Node version against `engines`), `npm audit --audit-level=high` | The same tests pass on GitHub | ✓ |
-| 6. Docs | README quickstart, CONTRIBUTING, one ADR per Skipped row | A visitor gets from clone to a passing run with the README alone, and every Skipped row has its ADR | |
+| 6. Docs | README quickstart, CONTRIBUTING, one ADR per Skipped row | A visitor gets from clone to a passing run with the README alone, and every Skipped row has its ADR | ✓ |
 | 7. Console errors | Auto fixture that fails a test on console errors or page errors; first check what dev logs today (e.g. the Cloudflare beacon) | Every test fails on an unexpected console or page error, and a deliberately broken page proves it | |
 | 8. Cleanup and test data | Teardown project that deletes what the run created; Faker factories with a seed; run ID prefix on created data | A run leaves nothing behind on dev, and the data it creates is traceable to the run | |
 | 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | |
@@ -229,3 +229,17 @@ How the framework uses it (step 3):
   downgrades ESLint, so they wait for upstream releases.
 - **Not yet:** sharding with a merged report, and the GitHub Pages report. With six tests the run takes about 15 s,
   so they come once the suite grows.
+
+## Decided: docs (step 6)
+
+- **The credentials are given on request.** A visitor can't run the e2e tests without dev's basic-auth credentials
+  and the test API token, so the README says to ask for them in a GitHub issue; they are shared privately, never in
+  the issue. Without them, `npm run check` runs (it needs no secrets), and CI shows the suite passing.
+- **The README quickstart was checked in a fresh clone** on 2026-11-11: `npm run setup`, fill in `.env`,
+  `npm test` → `6 passed`. On Arch, `npm run setup` warns that the OS is unsupported and libraries are missing;
+  the warning is about WebKit, and setup still exits 0. An empty `.env` stops the run and names the variables.
+- **ADRs live in [docs/adr/](adr/)**, numbered, each with Status, Date, Context, Decision and Consequences, and
+  listed in the folder's README. Every Skipped row has one (0001–0008). A changed decision is marked Superseded and
+  gets a new record.
+- **CONTRIBUTING repeats the spec rules** from "how a spec is written" in contributor terms, and asks for
+  `--repeat-each=5` on a new or changed spec.
