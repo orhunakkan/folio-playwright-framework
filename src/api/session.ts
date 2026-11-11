@@ -7,7 +7,7 @@ import type { TestUser } from './test-api.ts';
  * it. Only for tests whose subject is signing in; everywhere else, use `testUser`, which is already signed in.
  * Folio refuses cross-origin form posts, so the request says it comes from dev.
  */
-export async function signInOverHttp(request: APIRequestContext, user: TestUser): Promise<APIResponse> {
+export function signInOverHttp(request: APIRequestContext, user: TestUser): Promise<APIResponse> {
   return test.step(
     `sign in as ${user.username} over HTTP`,
     () =>

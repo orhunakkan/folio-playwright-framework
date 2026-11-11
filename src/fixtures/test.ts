@@ -3,6 +3,7 @@ import { FolioApi } from '../api/folio-api.ts';
 import { TestApi, type CreateUserOptions, type TestUser } from '../api/test-api.ts';
 import { scanAccessibility, type AccessibilityViolation } from '../checks/accessibility.ts';
 import { watchConsoleErrors } from '../checks/console-errors.ts';
+import { horizontalOverflow } from '../checks/layout.ts';
 import { readWebVitals, startWebVitals, type WebVitals } from '../checks/web-vitals.ts';
 import { FAKER_SEED } from '../config/run.ts';
 import { TestData, testSeed } from '../data/test-data.ts';
@@ -10,10 +11,9 @@ import { BookPage } from '../pages/book-page.ts';
 import { HighlightsPage } from '../pages/highlights-page.ts';
 import { HomePage } from '../pages/home-page.ts';
 import { LibraryPage } from '../pages/library-page.ts';
-import { horizontalOverflow } from '../checks/layout.ts';
 import { ReaderPage } from '../pages/reader-page.ts';
-import { redactErrors } from '../support/redact.ts';
 import { matchers } from '../support/matchers.ts';
+import { redactErrors } from '../support/redact.ts';
 import { forgetUser, recordUser } from '../support/run-ledger.ts';
 
 /**

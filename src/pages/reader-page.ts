@@ -56,9 +56,7 @@ export class ReaderPage {
     await test.step(
       `open ${book}, chapter ${String(chapter)}`,
       () => this.page.goto(`/read/${book}/chapter-${String(chapter)}`),
-      {
-        box: true,
-      },
+      { box: true },
     );
   }
 

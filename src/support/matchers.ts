@@ -47,16 +47,16 @@ export const matchers = {
   ): Promise<MatcherReturnType> {
     const request = 'request' in received ? received.request : received;
     const deadline = Date.now() + (options.timeout ?? this.timeout);
-    const isExpected = (who: string | null): boolean =>
-      (who !== null && (options.as === undefined || who === options.as)) !== this.isNot;
+    const isSignedInAsAsked = (who: string | null): boolean =>
+      who !== null && (options.as === undefined || who === options.as);
 
     let who = await whoIsSignedIn(request);
-    while (!isExpected(who) && Date.now() < deadline) {
+    while (isSignedInAsAsked(who) === this.isNot && Date.now() < deadline) {
       await new Promise((resolve) => setTimeout(resolve, POLL_MS));
       who = await whoIsSignedIn(request);
     }
 
-    const pass = who !== null && (options.as === undefined || who === options.as);
+    const pass = isSignedInAsAsked(who);
     const expected = options.as === undefined ? 'signed in' : `signed in as ${options.as}`;
     const actual = who === null ? 'signed out' : `signed in as ${who}`;
     return {
@@ -116,16 +116,17 @@ export const matchers = {
       },
       { name: 'CLS', value: received.cls, budget: BUDGETS.cls, unit: '', text: received.cls.toFixed(3) },
       { name: 'INP', value: received.inp, budget: BUDGETS.inp, unit: ' ms', text: `${String(received.inp)} ms` },
-    ].map(({ name, value, budget, unit, text }) => ({
-      over: !(value <= budget),
-      text: `${name} ${text}, ${value <= budget ? 'within' : 'over'} its budget of ${String(budget)}${unit}`,
-    }));
+    ].map(({ name, value, budget, unit, text }) => {
+      // False for NaN too: an LCP that was never measured is over its budget.
+      const within = value <= budget;
+      return { within, text: `${name} ${text}, ${within ? 'within' : 'over'} its budget of ${String(budget)}${unit}` };
+    });
     return {
       name: 'toBeWithinBudgets',
-      pass: lines.every(({ over }) => !over),
+      pass: lines.every(({ within }) => within),
       message: () =>
         `${this.utils.matcherHint('toBeWithinBudgets', undefined, '', { isNot: this.isNot })}\n\n` +
-        lines.map(({ over, text }) => `${over ? '✗' : '✓'} ${text}`).join('\n'),
+        lines.map(({ within, text }) => `${within ? '✓' : '✗'} ${text}`).join('\n'),
     };
   },
 };

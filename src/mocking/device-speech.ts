@@ -1,5 +1,12 @@
 import { test, type Page } from '@playwright/test';
 
+declare global {
+  interface Window {
+    /** What the fake voice was asked to say, set by `fakeDeviceSpeech`. */
+    __folioSpoken?: string[];
+  }
+}
+
 /** The name the fake device voice has, as Folio's player shows it. */
 export const FAKE_VOICE = 'Fake voice';
 
@@ -82,5 +89,5 @@ export async function fakeDeviceSpeech(page: Page): Promise<void> {
 
 /** Everything the fake voice was asked to say, in order. */
 export function spokenText(page: Page): Promise<string[]> {
-  return page.evaluate(() => [...((window as unknown as { __folioSpoken?: string[] }).__folioSpoken ?? [])]);
+  return page.evaluate(() => [...(window.__folioSpoken ?? [])]);
 }

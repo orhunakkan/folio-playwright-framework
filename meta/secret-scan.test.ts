@@ -7,7 +7,8 @@ import { after, test } from 'node:test';
 import { deflateRawSync } from 'node:zlib';
 import { findSecrets } from '../src/support/secret-scan.ts';
 
-const SECRETS = [{ name: 'PLACEHOLDER_TOKEN', value: 'placeholder-token-1234' }];
+const TOKEN = 'placeholder-token-1234';
+const SECRETS = [{ name: 'PLACEHOLDER_TOKEN', value: TOKEN }];
 const dir = mkdtempSync(join(tmpdir(), 'secret-scan-'));
 after(() => {
   rmSync(dir, { recursive: true });
@@ -55,7 +56,7 @@ function write(name: string, content: string | Buffer): string {
   return file;
 }
 
-const leak = `Authorization: Bearer ${SECRETS[0]?.value ?? ''}`;
+const leak = `Authorization: Bearer ${TOKEN}`;
 
 test('finds a secret in a plain file', () => {
   const file = write('plain.md', leak);

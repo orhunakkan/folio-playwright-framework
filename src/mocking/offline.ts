@@ -3,8 +3,9 @@ import { EXPECTED_CONSOLE_ERROR, WENT_OFFLINE } from '../checks/console-errors.t
 
 /**
  * Allowed mocking case "Offline and flaky network" (AGENTS.md): the browser context loses its connection, as a
- * device does, once the page's service worker is ready. Pages it then loads come from what Folio stored on the device, or fail. The browser logs each request
- * that can't go out as a console error; those are expected for this test, and noted on it.
+ * device does, once the page's service worker is ready. Pages it then loads come from what Folio stored on the
+ * device, or fail. The browser logs each request that can't go out as a console error; those are expected for this
+ * test, and noted on it.
  */
 export async function goOffline(context: BrowserContext, page: Page): Promise<void> {
   await test.step(
