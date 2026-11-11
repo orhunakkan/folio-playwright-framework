@@ -1,0 +1,51 @@
+# Contributing
+
+Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every change. Set up with the
+[README quickstart](README.md#quickstart).
+
+## Writing a spec
+
+[tests/bookmarks.spec.ts](tests/bookmarks.spec.ts) is the model. A new spec follows its patterns:
+
+- **Import `test` and `expect` from `src/fixtures/test.ts`**, never from `@playwright/test`.
+- **One journey per file**, named after what the user does. Tag the describe or test `@smoke` or `@regression`.
+- **Get a user from the `testUser` fixture.** It creates a fresh account through the test API, signs it in by
+  cookie, and deletes it after the test. A test that only needs the session writes `testUser: _signedIn`. A test
+  that needs Pro says `test.use({ testUserOptions: { plan: 'pro' } })`. Drive the sign-in form only in a test whose
+  subject is signing in.
+- **Put locators and actions in page objects** (`src/pages/`) **and component objects** (`src/components/`), and
+  inject them as fixtures in `src/fixtures/test.ts`. Methods say what the user does (`bookmarkThisPage()`), are
+  wrapped in `test.step(…, { box: true })`, and never assert.
+- **Use role and label locators.** ESLint rejects CSS, XPath, test IDs, text and placeholder locators.
+- **Assert what the user sees, and the save.** Folio updates the UI before a save finishes, so a method that saves
+  returns the save's `Response` and the spec asserts its status.
+- **Prove a list has loaded before asserting what it lacks**, by checking an item that must be there.
+- **End each journey with the accessibility and overflow checks**, once, at its richest state:
+  `expect(await scanAccessibility()).toEqual([])` and `await expect.poll(horizontalOverflow).toBe(0)`. A real
+  Folio accessibility bug goes in `KNOWN_ISSUES` in `src/checks/accessibility.ts`, as narrowly as possible.
+- **Skip only with a condition and a reason**: `test.skip(condition, 'why')`. ESLint rejects a bare `test.skip`.
+
+Explore the real dev site before writing a selector or an assertion. Don't guess text or behaviour.
+
+## Out of bounds
+
+- **Third-party features** (Ask the book, quizzes, flashcards, voices, word lookup, cover search, billing, email):
+  no tests, and no stubs. Stop a journey before it reaches one.
+- **Mocking** only for the five cases in [AGENTS.md](AGENTS.md#mocking-is-limited-to-these-cases).
+- **Secrets** stay in `.env` and GitHub Secrets. Never commit, log or paste them, and never share a local report:
+  its traces hold them.
+
+## Before a pull request
+
+```sh
+npm run check                                                 # typecheck, lint, format, meta-tests
+npx playwright test                                           # the whole suite against dev
+npx playwright test tests/<your-spec>.spec.ts --repeat-each=5 # a new or changed spec, to show it isn't flaky
+```
+
+- **Small commits** in [Conventional Commits](https://www.conventionalcommits.org/) style, e.g.
+  `test: highlights journey` or `docs: ADR for Allure`. A Git hook lints and formats staged files.
+- **CI must pass.** Pull requests from forks get no secrets, so their e2e job is skipped; a maintainer runs it.
+- **A new decision** that leaves something out on purpose gets an ADR in [docs/adr/](docs/adr/).
+- **Dependencies:** npm only, and commit `package-lock.json`. The Playwright image tag in
+  [.github/workflows/ci.yml](.github/workflows/ci.yml) must match `@playwright/test`.
