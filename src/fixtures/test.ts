@@ -1,4 +1,4 @@
-import { expect, test as base } from '@playwright/test';
+import { expect as baseExpect, test as base } from '@playwright/test';
 import { FolioApi } from '../api/folio-api.ts';
 import { TestApi, type CreateUserOptions, type TestUser } from '../api/test-api.ts';
 import { scanAccessibility, type AccessibilityViolation } from '../checks/accessibility.ts';
@@ -11,9 +11,14 @@ import { LibraryPage } from '../pages/library-page.ts';
 import { horizontalOverflow } from '../checks/layout.ts';
 import { ReaderPage } from '../pages/reader-page.ts';
 import { redactErrors } from '../support/redact.ts';
+import { matchers } from '../support/matchers.ts';
 import { forgetUser, recordUser } from '../support/run-ledger.ts';
 
-export { expect } from '@playwright/test';
+/**
+ * Playwright's `expect`, with the framework's domain matchers (src/support/matchers.ts): `toBeSignedIn()`,
+ * `toHaveStatus()` and `toMatchSchema()`.
+ */
+export const expect = baseExpect.extend(matchers);
 
 export type TestUserOptions = Pick<CreateUserOptions, 'plan' | 'starter'>;
 

@@ -83,6 +83,8 @@ run behaves and looks the same on macOS, on any Linux distribution, and in CI. Y
 | `src/pages/`, `src/components/` | Page and component objects: locators and user-intent methods, no assertions |
 | `src/api/` | Clients for Folio's test API and its own JSON endpoints, with their zod schemas |
 | `src/data/` | Seeded Faker factories for the data tests type into Folio |
+| `src/mocking/` | The only place a test may fake anything: the cases AGENTS.md allows |
+| `src/support/` | Domain matchers, network helpers, redaction, the run ledger and the secret scan |
 | `src/checks/` | The accessibility scan, the horizontal overflow check, and the console error check |
 | `src/config/` | The dev URL, the typed (zod) env, the run ID, and the image every run uses |
 | `scripts/` | `playwright.ts` runs Playwright in that image (`npm test` uses it); `scan-secrets.ts` checks reports |
@@ -98,6 +100,11 @@ Some of the choices behind it:
 - **One environment for every run:** the pinned Playwright image, locally and in CI.
 - **Desktop, phone and tablet projects.** Page objects handle the layouts, e.g. the reader's side panel, which
   narrow screens open as a dialog.
+- **Domain matchers** read like the app: `await expect(page).toBeSignedIn({ as: user })`,
+  `expect(saved).toHaveStatus(201)`, `await expect(response).toMatchSchema(Schema)`, each with a failure message in
+  Folio's terms.
+- **Mocking only where the real app can't oblige**, and only through `src/mocking/` (ESLint enforces it): today, a
+  slowed response that pins a Folio bug.
 - **Role and label locators only**, enforced by ESLint, so the tests read like a user and catch accessibility gaps.
 - **Every journey ends with an axe scan** (WCAG 2.2 AA) and a check that the page doesn't scroll sideways.
 - **Every test fails on a console error or an uncaught page error**, checked by the framework's `context` fixture.

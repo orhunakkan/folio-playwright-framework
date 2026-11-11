@@ -104,6 +104,12 @@ export async function readJson<Schema extends z.ZodType>(
 ): Promise<z.infer<Schema>> {
   const result = schema.safeParse(await response.json());
   if (result.success) return result.data;
-  const issues = result.error.issues.map((issue) => `  ${issue.path.join('.') || '(body)'}: ${issue.message}`);
-  throw new Error(`${response.url()} (${String(response.status())}) doesn't match the schema:\n${issues.join('\n')}`);
+  throw new Error(
+    `${response.url()} (${String(response.status())}) doesn't match the schema:\n${schemaIssues(result.error)}`,
+  );
+}
+
+/** A schema mismatch as one line per issue, `  <path>: <message>`. Zod's messages name types, not values. */
+export function schemaIssues(error: z.ZodError): string {
+  return error.issues.map((issue) => `  ${issue.path.join('.') || '(body)'}: ${issue.message}`).join('\n');
 }

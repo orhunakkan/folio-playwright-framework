@@ -11,7 +11,7 @@ test.describe('Bookmarks', { tag: '@regression' }, () => {
     await readerPage.open(BOOK, 1);
     const saved = await readerPage.bookmarkThisPage();
 
-    expect(saved.status()).toBe(201);
+    expect(saved).toHaveStatus(201);
     await expect(readerPage.bookmarkButton).toHaveAttribute('aria-pressed', 'true');
 
     await readerPage.open(BOOK, 3);
@@ -40,7 +40,7 @@ test.describe('Bookmarks', { tag: '@regression' }, () => {
 
     const removed = await readerPage.panel.removeBookmark('Ch. 1 · p. 1');
 
-    expect(removed.status()).toBe(200);
+    expect(removed).toHaveStatus(200);
     await expect(readerPage.panel.bookmark('Ch. 1 · p. 1')).toHaveCount(0);
 
     await page.reload();

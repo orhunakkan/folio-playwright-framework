@@ -35,7 +35,7 @@ third-party testing, limited mocking, public repository.
 | | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright | ✓ |
 | | Docs | README quickstart, CONTRIBUTING, ADRs | Shows judgment, not just code | ✓ |
 | **Showcase** | Visual | Screenshot tests on stable pages (home, library) with masking | Catches visual regressions | ✓ |
-| | API layer | Typed API client + zod response schemas | Shows API testing alongside UI | |
+| | API layer | Typed API client + zod response schemas | Shows API testing alongside UI | ✓ |
 | | Assertions | A few custom matchers (`toBeSignedIn()`) | Domain-language tests | |
 | | Performance | Web-vitals budgets, nightly | Covers more than functional testing | |
 | | Security | Header checks (`@http`) | Cheap, meaningful checks | ✓ |
@@ -144,7 +144,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | ✓ |
 | 12. Flakiness | A CI job on pull requests that runs only the specs the PR changed, with `--repeat-each=5`; `CI passed` requires it | A PR that changes a spec runs it five times in CI, and the PR can't merge if a repeat fails | ✓ |
 | 13. Visual | Screenshot tests on stable pages (home, library) with dynamic parts masked; baselines made in the pinned image | They pass in every browser project, locally and in CI, and a deliberate visual change fails them | ✓ |
-| 14. API layer | A typed client with zod response schemas for Folio's own endpoints, alongside the UI tests | An `@api` spec checks real responses against the schemas | |
+| 14. API layer | A typed client with zod response schemas for Folio's own endpoints, alongside the UI tests | An `@api` spec checks real responses against the schemas | ✓ |
 | 15. Custom matchers | A few domain matchers, e.g. `toBeSignedIn()`, via `expect.extend` in `src/fixtures/test.ts` | Used in at least two specs, with readable failure messages | |
 | 16. Performance | Web-vitals budgets (LCP, CLS, INP) measured in the browser, run nightly | The nightly run records the metrics in the report and fails when one is over budget | |
 | 17. AI | Playwright's test agents (planner, generator, healer), set up as Playwright documents them, with docs on using them within AGENTS.md | The agent files are committed, the docs explain them, and one plan made with them for a real journey is in the repo | |
@@ -204,7 +204,8 @@ How the framework uses it (step 3):
   locators and user-intent methods, wrap each method in `test.step(…, { box: true })`, and never assert.
 - **A test that needs a session but not the user's details** requests `testUser: _signedIn`. The underscore tells
   TypeScript and ESLint that it is unused on purpose.
-- **A method that saves something returns the save's `Response`**, and the spec asserts its status. Folio updates
+- **A method that saves something returns the save's `Response`**, and the spec asserts its status (since step 15,
+  with `toHaveStatus`). Folio updates
   the UI before the save finishes (the bookmark button shows pressed at once), so the UI alone doesn't prove the
   save, and leaving the page too early could cancel it.
 - **Prove a list has loaded before asserting what it lacks.** After a reload a list may be empty only because it
@@ -471,3 +472,38 @@ How the framework uses it (step 3):
 - **`@api` runs in the `http` project**, with `@http`: neither needs a browser page or a screen size. The browser
   projects leave both out. `--grep @api` runs them alone. `tests/account-api.spec.ts` passed `--repeat-each=5`
   (2026-11-11).
+
+## Decided: custom matchers (step 15)
+
+- **Three matchers**, in `src/support/matchers.ts`, added with `expect.extend` in `src/fixtures/test.ts`, so specs
+  get them from the one import they already have:
+  - **`toBeSignedIn({ as?, timeout? })`** on a page, a browser context or a request context. It asks Folio, not the
+    screen: `GET /account/export` answers 200 with the username when signed in, and redirects (302) when not. The
+    screen can't answer it the same way everywhere (the username is in the sidebar on desktop and behind "Open
+    menu" on a phone). It retries until the expect timeout, like a web-first assertion; `.not` works.
+    Used in `account.spec.ts`, `security-headers.spec.ts` and `account-api.spec.ts`.
+  - **`toHaveStatus(code)`** on a page's `Response` or an `APIResponse`: names the request and both statuses
+    (`POST /account/bookmarks/new answered 401 Unauthorized, expected 201`). It replaced every
+    `expect(x.status()).toBe(n)`, whose failure said only `Expected: 201, Received: 401`. Used in five specs.
+  - **`toMatchSchema(Schema)`** on an `APIResponse`: lists where the body breaks a zod schema. `readJson` stays for
+    when the spec needs the body too.
+- **Messages never print a response body**, only paths, statuses, usernames and zod's messages, which name types,
+  not values: the account export holds IP addresses.
+- **`tests/matchers.spec.ts` proves the messages**: each matcher fails on purpose against a real answer from dev,
+  and the test checks the message. It is `@api`, so it runs once.
+
+## Decided: mocking starts (during step 15)
+
+- **A Folio bug: the note box race.** In the reader, pressing Note while the highlights are still loading saves the
+  highlight but never opens its note box; the highlight offers "Add note" instead. Found 2026-11-11 when
+  `notes.spec.ts` failed once in 20 runs under load (then 0 in 80); slowing Folio's server functions by 3 s makes
+  it happen every time. The page shows no sign of the load to wait for.
+- **Handled as the owner decided:** `ReaderPage.addNote` presses Add note when that shows instead of the box, and
+  notes the bug on the test (`known Folio bug`). A `test.fail` test in `notes.spec.ts` reproduces it with a slowed
+  response, and pins it: the day Folio fixes it, that test goes red, and the marker and the workaround go.
+  `startNote` (select and press Note, no workaround) is what it uses.
+- **`src/mocking/` began with it**, ahead of step 18: `slowDown(page, url, ms)`, the "slow responses" case. The
+  request still reaches dev and its real answer comes back late. Folio's server functions have hashed names, so
+  `SERVER_FUNCTIONS` matches them as a group.
+- **ESLint keeps fakes in `src/mocking/`**: `route`, `routeFromHAR`, `routeWebSocket`, `unroute`, `setOffline`,
+  `addInitScript` and `.clock` are errors anywhere else in `tests/` and `src/`.

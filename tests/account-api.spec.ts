@@ -21,17 +21,17 @@ test.describe('Account API', { tag: ['@regression', '@api'] }, () => {
     const health = await visitorApi.health();
     const manifest = await visitorApi.manifest();
 
-    expect(health.status()).toBe(200);
+    expect(health).toHaveStatus(200);
     expect(await health.text()).toBe('ok');
-    expect(manifest.status()).toBe(200);
+    expect(manifest).toHaveStatus(200);
     expect(manifest.headers()['content-type']).toContain('application/manifest+json');
-    await readJson(manifest, ManifestSchema);
+    await expect(manifest).toMatchSchema(ManifestSchema);
   });
 
   test('a bookmark is saved, exported and removed', async ({ folioApi, testUser: _signedIn }) => {
     const created = await folioApi.createBookmark(BOOK, { chapter: 'chapter-1', page: 1 });
 
-    expect(created.status()).toBe(201);
+    expect(created).toHaveStatus(201);
     const { bookmark } = await readJson(created, BookmarkCreatedSchema);
     expect(bookmark.place).toMatchObject({ chapter: 'chapter-1', page: 1, label: 'Ch. 1 · p. 1' });
 
@@ -42,8 +42,8 @@ test.describe('Account API', { tag: ['@regression', '@api'] }, () => {
 
     const removed = await folioApi.deleteBookmark(bookmark.id);
 
-    expect(removed.status()).toBe(200);
-    await readJson(removed, OkSchema);
+    expect(removed).toHaveStatus(200);
+    await expect(removed).toMatchSchema(OkSchema);
     expect((await readJson(await folioApi.exportAccount(), AccountExportSchema)).bookmarks).toEqual([]);
   });
 
@@ -58,28 +58,28 @@ test.describe('Account API', { tag: ['@regression', '@api'] }, () => {
       color: 'green',
     });
 
-    expect(created.status()).toBe(201);
+    expect(created).toHaveStatus(201);
     const { highlight } = await readJson(created, HighlightSavedSchema);
     expect(highlight).toMatchObject({ color: 'green', note: null, text: FIRST_SENTENCE });
 
     const noted = await folioApi.noteHighlight(highlight.id, note);
 
-    expect(noted.status()).toBe(200);
+    expect(noted).toHaveStatus(200);
     expect((await readJson(noted, HighlightSavedSchema)).highlight).toMatchObject({ id: highlight.id, note });
     const exported = await readJson(await folioApi.exportAccount(), AccountExportSchema);
     expect(exported.highlights).toEqual([expect.objectContaining({ text: FIRST_SENTENCE, color: 'green', note })]);
 
     const removed = await folioApi.deleteHighlight(highlight.id);
 
-    expect(removed.status()).toBe(200);
-    await readJson(removed, OkSchema);
+    expect(removed).toHaveStatus(200);
+    await expect(removed).toMatchSchema(OkSchema);
     expect((await readJson(await folioApi.exportAccount(), AccountExportSchema)).highlights).toEqual([]);
   });
 
   test('the reading place is synced and exported', async ({ folioApi, testUser: _signedIn }) => {
     const synced = await folioApi.syncReadingPlace(BOOK, { chapter: 'chapter-2', page: 1 }, Date.now());
 
-    expect(synced.status()).toBe(200);
+    expect(synced).toHaveStatus(200);
     expect(await readJson(synced, SyncedSchema)).toEqual({ ok: true, skipped: 0 });
     const exported = await readJson(await folioApi.exportAccount(), AccountExportSchema);
     expect(exported.readingPlaces).toEqual([expect.objectContaining({ chapter: 'chapter-2', page: 1 })]);
@@ -88,7 +88,7 @@ test.describe('Account API', { tag: ['@regression', '@api'] }, () => {
   test('a new account exports as the test user, with nothing saved', async ({ folioApi, testUser }) => {
     const response = await folioApi.exportAccount();
 
-    expect(response.status()).toBe(200);
+    expect(response).toHaveStatus(200);
     expect(response.headers()['cache-control']).toContain('no-store');
     const exported = await readJson(response, AccountExportSchema);
     expect(exported.account.username).toBe(testUser.username);
@@ -98,32 +98,34 @@ test.describe('Account API', { tag: ['@regression', '@api'] }, () => {
   test.describe('refuses', () => {
     const bookmark = { book: BOOK, position: { chapter: 'chapter-1', page: 1 } };
 
-    test('a signed-out visitor', async ({ visitorApi }) => {
+    test('a signed-out visitor', async ({ request, visitorApi }) => {
+      await expect(request).not.toBeSignedIn();
+
       const write = await visitorApi.post('/account/bookmarks/new', bookmark);
       const exported = await visitorApi.exportAccount();
 
-      expect(write.status()).toBe(401);
+      expect(write).toHaveStatus(401);
       expect(await readJson(write, ErrorSchema)).toEqual({ error: 'signed_out' });
-      expect(exported.status()).toBe(302);
+      expect(exported).toHaveStatus(302);
     });
 
     test('a write from another origin', async ({ folioApi, testUser: _signedIn }) => {
       const response = await folioApi.post('/account/bookmarks/new', bookmark, { sameOrigin: false });
 
-      expect(response.status()).toBe(403);
+      expect(response).toHaveStatus(403);
     });
 
     test('a malformed body', async ({ folioApi, testUser: _signedIn }) => {
       const response = await folioApi.post('/account/bookmarks/new', { chapter: 1 });
 
-      expect(response.status()).toBe(400);
+      expect(response).toHaveStatus(400);
       expect(await readJson(response, ErrorSchema)).toEqual({ error: 'invalid' });
     });
 
     test('a book that does not exist', async ({ folioApi, testUser: _signedIn }) => {
       const response = await folioApi.post('/account/bookmarks/new', { ...bookmark, book: 'no-such-book' });
 
-      expect(response.status()).toBe(404);
+      expect(response).toHaveStatus(404);
       expect(await readJson(response, ErrorSchema)).toEqual({ error: 'not_found' });
     });
 
@@ -136,7 +138,7 @@ test.describe('Account API', { tag: ['@regression', '@api'] }, () => {
         color: 'red',
       });
 
-      expect(response.status()).toBe(400);
+      expect(response).toHaveStatus(400);
       expect(await readJson(response, ErrorSchema)).toEqual({ error: 'invalid' });
     });
   });

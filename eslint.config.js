@@ -59,6 +59,26 @@ export default defineConfig(
   },
 
   {
+    // Mocking only for AGENTS.md's five cases, and only through src/mocking/, so every fake is in one small folder.
+    files: ['tests/**/*.ts', 'src/**/*.ts'],
+    ignores: ['src/mocking/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'CallExpression[callee.property.name=/^(route|routeFromHAR|routeWebSocket|unroute|setOffline|addInitScript)$/]',
+          message: 'Fake the network, offline, read-aloud or time only through src/mocking/ (AGENTS.md).',
+        },
+        {
+          selector: "MemberExpression[property.name='clock']",
+          message: 'Control time only through src/mocking/ (AGENTS.md).',
+        },
+      ],
+    },
+  },
+
+  {
     // Config meta-tests run on Node's own test runner, whose test() calls need no await.
     files: ['meta/**/*.ts'],
     rules: {

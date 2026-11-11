@@ -23,7 +23,7 @@ test.describe('Security headers', { tag: '@http' }, () => {
     test(`${kind} sends the security headers`, async ({ request }) => {
       const response = await request.get(path, { maxRedirects: 0 });
 
-      expect(response.status()).toBe(status);
+      expect(response).toHaveStatus(status);
       expect(response.headers()).toMatchObject(SECURITY_HEADERS);
     });
   }
@@ -35,7 +35,7 @@ test.describe('Security headers', { tag: '@http' }, () => {
 
     const response = await request.get(stylesheet ?? '');
 
-    expect(response.status()).toBe(200);
+    expect(response).toHaveStatus(200);
     expect(response.headers()).toMatchObject({ ...SECURITY_HEADERS, 'content-type': 'text/css; charset=utf-8' });
   });
 
@@ -44,7 +44,7 @@ test.describe('Security headers', { tag: '@http' }, () => {
     const signInPage = await request.get('/login');
     const redirect = await request.get('/account', { maxRedirects: 0 });
 
-    expect(signedIn.status()).toBe(200);
+    expect(signedIn).toHaveStatus(200);
     for (const response of [signedIn, signInPage, redirect]) {
       expect(response.headers()['cache-control'], response.url()).toContain('no-store');
     }
@@ -54,7 +54,8 @@ test.describe('Security headers', { tag: '@http' }, () => {
     // `request` has its own cookie jar, apart from the browser context `testUser` signed in.
     const response = await signInOverHttp(request, testUser);
 
-    expect(response.status()).toBe(303);
+    expect(response).toHaveStatus(303);
+    await expect(request).toBeSignedIn({ as: testUser.username });
     const { cookies } = await request.storageState();
     expect(cookies.find((cookie) => cookie.name === '__Host-session')).toMatchObject({
       domain: 'dev.agenticlibrary.app',
