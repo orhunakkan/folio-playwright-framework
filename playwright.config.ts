@@ -6,7 +6,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: env.CI,
   retries: env.CI ? 2 : 0,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  // In CI, `github` turns failures into annotations on the pull request.
+  reporter: env.CI ? [['list'], ['github'], ['html', { open: 'never' }]] : [['list'], ['html', { open: 'never' }]],
 
   // Explicit timeouts, so behaviour doesn't drift with Playwright's defaults.
   timeout: 30_000,
@@ -23,7 +24,10 @@ export default defineConfig({
     },
     actionTimeout: 10_000,
     navigationTimeout: 15_000,
-    trace: 'retain-on-failure',
+    // Traces record request headers, including dev's basic-auth header and the test API token, and Playwright
+    // can't redact them. CI artifacts of a public repository are downloadable by anyone, so CI records none.
+    // Screenshots, video and error context still explain a CI failure. meta/config.test.ts guards this.
+    trace: env.CI ? 'off' : 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },

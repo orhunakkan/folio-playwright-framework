@@ -27,7 +27,7 @@ third-party testing, limited mocking, public repository.
 | | Tags & skips | `@smoke`, `@regression`, `@http`; conditional skips with reasons | Targeted runs, honest skips |
 | | Reporting in tests | `test.step()` in page objects | Reports and traces read like a story |
 | | Guards | `forbidOnly`, plus a meta-test that checks the config | The suite can't silently rot |
-| | Debugging | Trace, screenshot and video on failure | Any failure is diagnosable |
+| | Debugging | Screenshot and video on failure; traces locally only (they hold secrets) | Any failure is diagnosable |
 | | CI | GitHub-hosted runners, pinned image, sharding + merged report, PR gate, nightly run | Public, fast, trustworthy |
 | | Reporting | HTML report published to GitHub Pages | Visitors can see real results |
 | | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright |
@@ -202,3 +202,20 @@ How the framework uses it (step 3):
   infrastructure, not a Folio feature, so it is neither tested nor blocked.
 - **On phone and tablet widths the reader hides its side panel**, so the Bookmarks tab isn't visible. The page
   object will need a step to open the panel when those projects are added.
+
+## Decided: CI (step 5)
+
+- **No traces in CI.** Traces record request headers, including dev's basic-auth header and the test API token,
+  and Playwright can't redact them; artifacts of a public repository are downloadable by anyone. CI keeps
+  screenshots, video and error context. `meta/config.test.ts` fails if CI tracing is turned back on, and also checks
+  `forbidOnly` and that basic-auth credentials go only to dev. A failing CI-mode run was checked on 2026-11-11: its
+  report and results hold no secret values. Locally, traces stay on failure; don't share a local report.
+- **Both jobs run in `mcr.microsoft.com/playwright:v1.65.0-noble`**, which has Node 26.13.0 and npm 11.20.0,
+  matching `engines`. Its tag must move with `@playwright/test`.
+- **Actions are pinned by commit SHA**, with the version in a comment, as a supply-chain defence.
+- **Pull requests from forks skip the e2e job.** GitHub gives them no secrets, so the tests couldn't reach dev.
+- **`npm audit --audit-level=high` passes.** On 2026-11-11 it reported 10 moderate advisories, all one `minimatch`
+  denial-of-service reached through the ESLint and typescript-eslint tooling (dev-only). The only offered fix
+  downgrades ESLint, so they wait for upstream releases.
+- **Not yet:** sharding with a merged report, and the GitHub Pages report. With six tests the run takes about 15 s,
+  so they come once the suite grows.
