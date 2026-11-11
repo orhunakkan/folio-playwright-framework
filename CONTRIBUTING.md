@@ -56,7 +56,11 @@ npm test -- tests/<your-spec>.spec.ts --repeat-each=5         # a new or changed
 
 - **Small commits** in [Conventional Commits](https://www.conventionalcommits.org/) style, e.g.
   `test: highlights journey` or `docs: ADR for Allure`. A Git hook lints and formats staged files.
-- **CI must pass.** Pull requests from forks get no secrets, so their e2e job is skipped; a maintainer runs it.
+- **CI must pass.** `main` requires the `CI passed` check, which is green only when every job is. Pull requests
+  from forks get no secrets, so their e2e job is skipped; a maintainer runs the suite before merging.
+- **Reports are scanned for secrets** in CI, before they are uploaded or published. If the scan fails, don't work
+  around it: find what wrote the secret and redact it there.
 - **A new decision** that leaves something out on purpose gets an ADR in [docs/adr/](docs/adr/).
 - **Dependencies:** npm only, and commit `package-lock.json`. The Playwright image tag in
   [.github/workflows/ci.yml](.github/workflows/ci.yml) must match `@playwright/test`; `npm run check` fails if not.
+  Renovate opens update PRs on Mondays, with `@playwright/test` and the image in one PR.

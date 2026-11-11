@@ -1,5 +1,7 @@
 # Folio Playwright framework
 
+[![CI](https://github.com/orhunakkan/folio-playwright-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/orhunakkan/folio-playwright-framework/actions/workflows/ci.yml)
+
 An end-to-end test framework built with [Playwright](https://playwright.dev) and TypeScript, written to show
 automation best practices on a real app. The app under test is **Folio**, a library and reader web app. Folio's own
 source is private and is not part of this repository; the tests drive its dev environment,
@@ -9,6 +11,8 @@ source is private and is not part of this repository; the tests drive its dev en
 - [AGENTS.md](AGENTS.md): the rules every test follows (dev only, no third-party testing, limited mocking).
 - [CONTRIBUTING.md](CONTRIBUTING.md): how a spec is written, and what to check before a pull request.
 - [docs/adr/](docs/adr/): what the framework leaves out on purpose, and why.
+- [The latest report](https://orhunakkan.github.io/folio-playwright-framework/): the HTML report of the last run on
+  `main` (pushes and the nightly run).
 
 ## Quickstart
 
@@ -65,6 +69,7 @@ run behaves and looks the same on macOS, on any Linux distribution, and in CI. Y
 | `npm test -- tests/bookmarks.spec.ts --repeat-each=5` | One spec, five times over, to show it isn't flaky |
 | `npm run test:ui` | UI mode, at <http://localhost:9324> |
 | `npx playwright show-report` | Opens the last run's HTML report |
+| `node scripts/scan-secrets.ts <folder>` | Fails if a secret value is in the folder's files, even inside zips |
 | `npm run check` | Typecheck, lint, format check and config meta-tests; needs no credentials |
 | `npm run format` | Formats the code with Prettier |
 
@@ -79,7 +84,7 @@ run behaves and looks the same on macOS, on any Linux distribution, and in CI. Y
 | `src/data/` | Seeded Faker factories for the data tests type into Folio |
 | `src/checks/` | The accessibility scan, the horizontal overflow check, and the console error check |
 | `src/config/` | The dev URL, the typed (zod) env, the run ID, and the image every run uses |
-| `scripts/playwright.ts` | Runs Playwright in that image; `npm test` uses it |
+| `scripts/` | `playwright.ts` runs Playwright in that image (`npm test` uses it); `scan-secrets.ts` checks reports |
 | `meta/` | Tests of the Playwright config itself, run with `node --test` |
 
 Some of the choices behind it:
@@ -101,6 +106,10 @@ Some of the choices behind it:
   public CI run records none; and a failed API call's error, which lists those headers, is redacted before any
   reporter prints it.
   Locally, traces are kept on failure: don't share a local report.
+- **CI at scale:** the suite runs in two shards, whose reports are merged into one. Every report is scanned for
+  secret values, inside its zips too, before it is uploaded or published. One check, `CI passed`, must be green
+  before a pull request can merge into `main`. Renovate keeps dependencies current, moving Playwright and its image
+  together.
 
 ## License
 

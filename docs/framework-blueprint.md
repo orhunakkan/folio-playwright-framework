@@ -30,9 +30,9 @@ third-party testing, limited mocking, public repository.
 | | Reporting in tests | `test.step()` in page objects | Reports and traces read like a story | ✓ |
 | | Guards | `forbidOnly`, plus a meta-test that checks the config | The suite can't silently rot | ✓ |
 | | Debugging | Screenshot and video on failure; traces locally only (they hold secrets) | Any failure is diagnosable | ✓ |
-| | CI | GitHub-hosted runners, pinned image, sharding + merged report, PR gate, nightly run | Public, fast, trustworthy | |
-| | Reporting | HTML report published to GitHub Pages | Visitors can see real results | |
-| | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright | |
+| | CI | GitHub-hosted runners, pinned image, sharding + merged report, PR gate, nightly run | Public, fast, trustworthy | ✓ |
+| | Reporting | HTML report published to GitHub Pages | Visitors can see real results | Built; Pages to be switched on |
+| | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright | ✓; Renovate app to be installed |
 | | Docs | README quickstart, CONTRIBUTING, ADRs | Shows judgment, not just code | ✓ |
 | **Showcase** | Visual | Screenshot tests on stable pages (home, catalogue) with masking | Catches visual regressions | |
 | | API layer | Typed API client + zod response schemas | Shows API testing alongside UI | |
@@ -141,7 +141,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 8. Cleanup and test data | Teardown project that deletes what the run created; Faker factories with a seed; run ID prefix on created data | A run leaves nothing behind on dev, and the data it creates is traceable to the run | ✓ |
 | 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | ✓ |
 | 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, every run in the pinned image (`npm test`); the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | ✓ locally, without WebKit; CI after the push |
-| 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | |
+| 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | PR gate ✓; Pages and the Renovate app wait for the owner |
 
 Steps 1–5 built the foundation, and steps 6–11 finish the Core tier. The mocking folder is not a step: it is built
 with the first test that needs one of the five allowed cases. The Showcase rows follow Core. More journeys follow
@@ -218,6 +218,9 @@ How the framework uses it (step 3):
   screenshots, video and error context. `meta/config.test.ts` fails if CI tracing is turned back on, and also checks
   `forbidOnly` and that basic-auth credentials go only to dev. A failing CI-mode run was checked on 2026-11-11: its
   report and results hold no secret values. Locally, traces stay on failure; don't share a local report.
+  (Step 11 correction: that check, and the one in step 9, searched files as plain text, which can't see into the
+  HTML report's embedded zip. Both of CI's uploaded reports so far were rescanned with the zip-aware scan on
+  2026-11-11, along with their run logs: clean.)
 - **Both jobs run in `mcr.microsoft.com/playwright:v1.65.0-noble`**, which has Node 26.13.0 and npm 11.20.0,
   matching `engines`. Its tag must move with `@playwright/test`.
 - **Actions are pinned by commit SHA**, with the version in a comment, as a supply-chain defence.
@@ -312,7 +315,7 @@ How the framework uses it (step 3):
   the framework's were clean in the output, the report and `test-results/`. `meta/redact.test.ts` guards it.
 - **For step 11: the JSON reporter writes the whole config into its output, basic-auth password included.** CI
   doesn't use it, and the HTML report was clean. Sharding uploads blob reports as artifacts, so check them for
-  secrets before the first sharded run; they may embed the config the same way.
+  secrets before the first sharded run; they may embed the config the same way. (Checked in step 11: they don't.)
 
 ## Decided: devices and browsers (step 10)
 
@@ -343,3 +346,41 @@ How the framework uses it (step 3):
   the bookmark button before opening the panel.
 - **The narrow reader shows "Ask this book"**, a third-party feature, where the wide one shows "Ask". Tests press
   neither.
+
+## Decided: CI at scale (step 11)
+
+- **Two shards.** Each e2e job runs `npm test -- --shard=<n>/2` and writes a blob report (the CI reporters are
+  `list`, `github` and `blob`). `setup` and `cleanup` run in every shard, which is safe: the run ledger is per
+  machine, and the sweep only removes accounts older than 6 hours. `fail-fast` is off, so every shard finishes
+  and the merged report shows every failure.
+- **The report job merges the blob reports** with `merge.config.ts`, a config with only the HTML reporter, because
+  `playwright.config.ts` loads the secrets. It runs after failed tests too, and uploads the report as an artifact
+  (14 days). Main's runs (pushes, the nightly run, manual runs) also publish it to GitHub Pages, at
+  <https://orhunakkan.github.io/folio-playwright-framework/>; a pull request's report never goes there.
+- **Every report is scanned for secrets before it leaves the runner** (`scripts/scan-secrets.ts`): each shard's
+  blob report before upload, and the merged report before upload and publishing. A failed scan stops the upload.
+  The scan reads inside zips at any depth, because blob reports are zips and the HTML report embeds its data as a
+  base64 zip in `index.html`, which a plain text search can't read. It names what it found, never the value.
+  `meta/secret-scan.test.ts` covers plain files, deflated and stored zips, nested zips and the embedded zip.
+  Checked on 2026-11-11 with a deliberately failing call through an unredacted request context, in CI mode: the
+  scan found the basic-auth header and the token in both the blob and the HTML report, including inside the
+  embedded zip. The framework's own runs are clean.
+- **Blob reports hold no config secrets.** Unlike the JSON reporter, the blob report's config and projects leave
+  out `use`, so `httpCredentials` isn't in them (checked on 2026-11-11).
+- **One required check: `CI passed`.** A final job that is green only when `check`, every e2e shard and the
+  report job passed. Requiring it, rather than each job, keeps the rule stable as the shard count changes. For a
+  fork's pull request, whose e2e jobs are skipped (no secrets), it passes on `check` alone, and a maintainer runs the
+  suite before merging.
+- **The ruleset "main: CI must pass"** (created 2026-11-11) requires `CI passed` on the default branch, and also
+  blocks force-pushes and deleting it. Repository admins may bypass it, so the owner can still push straight to
+  `main` and, deliberately, merge past a red check; anyone else's pull request can't merge red. Remove the bypass
+  in the repository's Rules settings to hold the owner to it too.
+- **Renovate** (`renovate.json`, validated with `renovate-config-validator --strict`): weekly, Monday before 06:00
+  UTC; releases at least 3 days old; `@playwright/test` and the `mcr.microsoft.com/playwright` image in one
+  "Playwright" group, so the tag check in `meta/image.test.ts` passes on the same PR; TypeScript kept below 6.1;
+  `.nvmrc` and `@types/node` majors left to follow the image's Node; Actions stay pinned by digest. Its PRs face
+  the same `CI passed` check. It runs as the Renovate GitHub App, which the owner installs; a Renovate Action with
+  the default token would open PRs that don't trigger CI.
+- **Waiting on the owner (2026-11-11):** switching GitHub Pages on, with "GitHub Actions" as its source, and
+  installing the Renovate app. Until Pages is on, the `pages` job fails with `Not Found`, and the run on `main`
+  shows red although every test passed.
