@@ -7,51 +7,53 @@ third-party testing, limited mocking, public repository.
 - **Showcase**: a deliberate, smaller set of extras.
 - **Skipped**: left out on purpose, each with a short reason in an ADR.
 - **Outcomes**: qualities the repository should have overall, beyond individual practices.
+- **Done**: ✓ when the repository has everything in the row. A row that is only partly there stays blank, and
+  Outcomes, which are ongoing, are never ticked.
 
-| Tier | Area | What the framework has | Why |
-| --- | --- | --- | --- |
-| **Core** | Structure | Page objects + component objects, user-intent methods, no assertions inside | Readable, maintainable specs |
-| | Fixtures | Custom `test`/`expect`, page objects injected as fixtures | One import, less boilerplate |
-| | Fixtures | Auto fixture that fails a test on console errors or page errors | Catches hidden JS bugs on every test |
-| | Locators | Role and label locators only, enforced by lint | Resilient, accessible by design |
-| | Assertions | Web-first, ARIA state, response status | Assertions retry on their own and check the user's view and the network |
-| | Isolation | Each test owns its data; `fullyParallel` | Runs in any order, retries safely |
-| | Setup | Users and data created over HTTP; the UI is driven only for the feature under test | Fast, focused tests |
-| | Test data | Faker factories with a seed, plus a run ID prefix on created data | Realistic, reproducible, traceable on dev |
-| | Cleanup | A teardown project deletes what the run created | Keeps the shared dev site clean |
-| | Config | Typed env (zod), explicit timeouts, dev URL in one place | Fails fast and stays predictable |
-| | Mocking | One small folder with only the five allowed cases | Follows AGENTS.md, nothing more |
-| | Accessibility | Axe scan per journey | A11y is part of "done" |
-| | Responsive | Desktop, phone and tablet projects; horizontal overflow check | Proves layouts hold up |
-| | Cross-browser | Chromium, Firefox and WebKit on desktop | Wider coverage than Folio's own suite |
-| | Tags & skips | `@smoke`, `@regression`, `@http`; conditional skips with reasons | Targeted runs, honest skips |
-| | Reporting in tests | `test.step()` in page objects | Reports and traces read like a story |
-| | Guards | `forbidOnly`, plus a meta-test that checks the config | The suite can't silently rot |
-| | Debugging | Screenshot and video on failure; traces locally only (they hold secrets) | Any failure is diagnosable |
-| | CI | GitHub-hosted runners, pinned image, sharding + merged report, PR gate, nightly run | Public, fast, trustworthy |
-| | Reporting | HTML report published to GitHub Pages | Visitors can see real results |
-| | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright |
-| | Docs | README quickstart, CONTRIBUTING, ADRs | Shows judgment, not just code |
-| **Showcase** | Visual | Screenshot tests on stable pages (home, catalogue) with masking | Catches visual regressions |
-| | API layer | Typed API client + zod response schemas | Shows API testing alongside UI |
-| | Assertions | A few custom matchers (`toBeSignedIn()`) | Domain-language tests |
-| | Performance | Web-vitals budgets, nightly | Covers more than functional testing |
-| | Security | Header checks (`@http`) | Cheap, meaningful checks |
-| | Flakiness | Burn-in (`--repeat-each`) on changed specs in PRs | Stops flaky tests at the door |
-| | AI | Playwright test agents (planner, healer) with docs | Fits an "agentic" story |
-| **Skipped (with ADR)** | Third parties | No tests, no stubs | AGENTS.md rule |
-| | Other mocking | No HAR replay or extra mocks | AGENTS.md rule |
-| | Allure | HTML report only | One good reporter beats two |
-| | Component testing | Not included | No access to Folio's source here |
-| | E2E coverage | Not included | The dev site isn't an instrumented build |
-| | DB reset or guard | Not included | It's a shared deployed environment |
-| | Bundle leak check | Not included | Belongs in Folio's own repo |
-| | Notifications | Not included | No team to notify |
-| **Outcomes** | CI health | Always green, no flaky tests | A red badge undoes everything |
-| | Speed | Full run in about 10 minutes or less | People actually run it |
-| | First run | Clone → `npm run setup` → `npm test` → passing | Easy to evaluate |
-| | Consistency | The same patterns in every spec | This matters more than having many patterns |
-| | History | Small, meaningful commits | Shows how it was built |
+| Tier | Area | What the framework has | Why | Done |
+| --- | --- | --- | --- | --- |
+| **Core** | Structure | Page objects + component objects, user-intent methods, no assertions inside | Readable, maintainable specs | ✓ |
+| | Fixtures | Custom `test`/`expect`, page objects injected as fixtures | One import, less boilerplate | ✓ |
+| | Fixtures | Auto fixture that fails a test on console errors or page errors | Catches hidden JS bugs on every test | |
+| | Locators | Role and label locators only, enforced by lint | Resilient, accessible by design | ✓ |
+| | Assertions | Web-first, ARIA state, response status | Assertions retry on their own and check the user's view and the network | ✓ |
+| | Isolation | Each test owns its data; `fullyParallel` | Runs in any order, retries safely | ✓ |
+| | Setup | Users and data created over HTTP; the UI is driven only for the feature under test | Fast, focused tests | ✓ |
+| | Test data | Faker factories with a seed, plus a run ID prefix on created data | Realistic, reproducible, traceable on dev | |
+| | Cleanup | A teardown project deletes what the run created | Keeps the shared dev site clean | |
+| | Config | Typed env (zod), explicit timeouts, dev URL in one place | Fails fast and stays predictable | ✓ |
+| | Mocking | One small folder with only the five allowed cases | Follows AGENTS.md, nothing more | |
+| | Accessibility | Axe scan per journey | A11y is part of "done" | ✓ |
+| | Responsive | Desktop, phone and tablet projects; horizontal overflow check | Proves layouts hold up | |
+| | Cross-browser | Chromium, Firefox and WebKit on desktop | Wider coverage than Folio's own suite | |
+| | Tags & skips | `@smoke`, `@regression`, `@http`; conditional skips with reasons | Targeted runs, honest skips | |
+| | Reporting in tests | `test.step()` in page objects | Reports and traces read like a story | ✓ |
+| | Guards | `forbidOnly`, plus a meta-test that checks the config | The suite can't silently rot | ✓ |
+| | Debugging | Screenshot and video on failure; traces locally only (they hold secrets) | Any failure is diagnosable | ✓ |
+| | CI | GitHub-hosted runners, pinned image, sharding + merged report, PR gate, nightly run | Public, fast, trustworthy | |
+| | Reporting | HTML report published to GitHub Pages | Visitors can see real results | |
+| | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright | |
+| | Docs | README quickstart, CONTRIBUTING, ADRs | Shows judgment, not just code | |
+| **Showcase** | Visual | Screenshot tests on stable pages (home, catalogue) with masking | Catches visual regressions | |
+| | API layer | Typed API client + zod response schemas | Shows API testing alongside UI | |
+| | Assertions | A few custom matchers (`toBeSignedIn()`) | Domain-language tests | |
+| | Performance | Web-vitals budgets, nightly | Covers more than functional testing | |
+| | Security | Header checks (`@http`) | Cheap, meaningful checks | |
+| | Flakiness | Burn-in (`--repeat-each`) on changed specs in PRs | Stops flaky tests at the door | |
+| | AI | Playwright test agents (planner, healer) with docs | Fits an "agentic" story | |
+| **Skipped (with ADR)** | Third parties | No tests, no stubs | AGENTS.md rule | |
+| | Other mocking | No HAR replay or extra mocks | AGENTS.md rule | |
+| | Allure | HTML report only | One good reporter beats two | |
+| | Component testing | Not included | No access to Folio's source here | |
+| | E2E coverage | Not included | The dev site isn't an instrumented build | |
+| | DB reset or guard | Not included | It's a shared deployed environment | |
+| | Bundle leak check | Not included | Belongs in Folio's own repo | |
+| | Notifications | Not included | No team to notify | |
+| **Outcomes** | CI health | Always green, no flaky tests | A red badge undoes everything | |
+| | Speed | Full run in about 10 minutes or less | People actually run it | |
+| | First run | Clone → `npm run setup` → `npm test` → passing | Easy to evaluate | |
+| | Consistency | The same patterns in every spec | This matters more than having many patterns | |
+| | History | Small, meaningful commits | Shows how it was built | |
 
 ## Dependencies
 
