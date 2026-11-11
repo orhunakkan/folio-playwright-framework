@@ -1,0 +1,39 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests", ":semanticCommits"],
+  "schedule": ["before 6am on monday"],
+  "timezone": "Etc/UTC",
+  "minimumReleaseAge": "3 days",
+  "rangeStrategy": "bump",
+  "labels": ["dependencies"],
+  "lockFileMaintenance": { "enabled": true },
+  "packageRules": [
+    {
+      "description": "The image tag must match @playwright/test (meta/image.test.ts checks it), so both move in one PR.",
+      "groupName": "Playwright",
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"]
+    },
+    {
+      "description": "The image's tags are v<version>-noble.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["mcr.microsoft.com/playwright"],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<compatibility>noble)$"
+    },
+    {
+      "description": "typescript-eslint supports TypeScript below 6.1 only (see the blueprint's Dependencies notes).",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<6.1"
+    },
+    {
+      "description": "Node comes with the Playwright image, so .nvmrc and @types/node follow its major, not Node's releases.",
+      "matchManagers": ["nvm"],
+      "enabled": false
+    },
+    {
+      "description": "Node comes with the Playwright image, so .nvmrc and @types/node follow its major, not Node's releases.",
+      "matchPackageNames": ["@types/node"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ]
+}
