@@ -18,7 +18,7 @@ export class ReaderPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.panel = new BookPanel(page.getByRole('complementary', { name: 'Book contents panel' }));
+    this.panel = new BookPanel(page);
     this.bookmarkButton = page.getByRole('button', { name: 'Bookmark this page' });
     this.text = page.getByRole('article');
     this.noteButton = page.getByRole('button', { name: 'Note', exact: true });
@@ -58,7 +58,8 @@ export class ReaderPage {
 
   /**
    * Selects a whole paragraph, highlights it with a note, and returns Folio's response once the note is saved.
-   * Pressing Note saves the highlight first and opens its note box in the panel's Highlights tab.
+   * Pressing Note saves the highlight first and opens its note box in the panel's Highlights tab (on narrow screens,
+   * it opens the panel's dialog for that).
    */
   async addNote(passage: string, note: string): Promise<Response> {
     return test.step(

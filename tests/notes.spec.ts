@@ -21,7 +21,7 @@ test.describe('Notes', { tag: '@regression' }, () => {
     await expect(readerPage.panel.note(PASSAGE)).toHaveText(`Note: ${note}`);
 
     await page.reload();
-    await readerPage.panel.highlightsTab.click();
+    await readerPage.panel.showHighlights();
 
     await expect(readerPage.panel.note(PASSAGE)).toHaveText(`Note: ${note}`);
 

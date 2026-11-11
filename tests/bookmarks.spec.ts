@@ -15,11 +15,14 @@ test.describe('Bookmarks', { tag: '@regression' }, () => {
     await expect(readerPage.bookmarkButton).toHaveAttribute('aria-pressed', 'true');
 
     await readerPage.open(BOOK, 3);
+
+    await expect(readerPage.bookmarkButton).toHaveAttribute('aria-pressed', 'false');
+
+    // On narrow screens the panel opens as a modal dialog, which hides the rest of the page until it closes.
     await readerPage.panel.showBookmarks();
 
     await expect(readerPage.panel.bookmarks).toHaveCount(1);
     await expect(readerPage.panel.bookmark('Ch. 1 · p. 1')).toBeVisible();
-    await expect(readerPage.bookmarkButton).toHaveAttribute('aria-pressed', 'false');
 
     await readerPage.panel.goToBookmark('Ch. 1 · p. 1');
 

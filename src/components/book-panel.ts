@@ -1,8 +1,17 @@
-import { test, type Locator, type Response } from '@playwright/test';
+import { test, type Locator, type Page, type Response } from '@playwright/test';
 import { isPostTo } from '../support/network.ts';
 
-/** The reader's side panel ("Book contents panel"), with its Contents, Highlights and Bookmarks tabs. */
+/**
+ * The reader's book contents panel, with its Contents, Highlights and Bookmarks tabs. On wide screens it sits beside
+ * the text. On narrower ones (phones, tablets) it is hidden, and the Contents button opens it as a dialog; the
+ * `show…` methods open it first when it's hidden.
+ */
 export class BookPanel {
+  readonly page: Page;
+  /** The panel as it is on screen: beside the text, or the dialog. */
+  readonly root: Locator;
+  /** Only on screens too narrow for the panel: opens it as a dialog. */
+  readonly openButton: Locator;
   readonly bookmarksTab: Locator;
   /** One entry per bookmark, in the Bookmarks tab. */
   readonly bookmarks: Locator;
@@ -14,11 +23,16 @@ export class BookPanel {
   readonly noteBox: Locator;
   readonly saveNoteButton: Locator;
 
-  constructor(root: Locator) {
-    this.bookmarksTab = root.getByRole('tab', { name: 'Bookmarks' });
-    this.bookmarks = root.getByRole('tabpanel', { name: 'Bookmarks' }).getByRole('listitem');
-    this.highlightsTab = root.getByRole('tab', { name: /^Highlights/ });
-    const highlightsPanel = root.getByRole('tabpanel', { name: /^Highlights/ });
+  constructor(page: Page) {
+    this.page = page;
+    this.root = page
+      .getByRole('complementary', { name: 'Book contents panel' })
+      .or(page.getByRole('dialog', { name: 'Contents' }));
+    this.openButton = page.getByRole('button', { name: 'Contents', exact: true });
+    this.bookmarksTab = this.root.getByRole('tab', { name: 'Bookmarks' });
+    this.bookmarks = this.root.getByRole('tabpanel', { name: 'Bookmarks' }).getByRole('listitem');
+    this.highlightsTab = this.root.getByRole('tab', { name: /^Highlights/ });
+    const highlightsPanel = this.root.getByRole('tabpanel', { name: /^Highlights/ });
     this.highlights = highlightsPanel.getByRole('listitem');
     this.noteBox = highlightsPanel.getByRole('textbox', { name: 'Note' });
     this.saveNoteButton = highlightsPanel.getByRole('button', { name: 'Save' });
@@ -41,8 +55,38 @@ export class BookPanel {
     return this.bookmarks.filter({ hasText: place });
   }
 
+  /**
+   * Opens the panel if the screen is too narrow to show it. Which layout the reader uses is decided by CSS, so it is
+   * settled as soon as the page has loaded. A no-op on wide screens, and when the dialog is already open (pressing
+   * Note opens it).
+   */
+  async open(): Promise<void> {
+    if (!(await this.openButton.isVisible())) return;
+    if ((await this.openButton.getAttribute('aria-expanded')) === 'true') return;
+
+    await test.step('open the book contents panel', () => this.openButton.click(), { box: true });
+  }
+
   async showBookmarks(): Promise<void> {
-    await test.step('show bookmarks', () => this.bookmarksTab.click(), { box: true });
+    await test.step(
+      'show bookmarks',
+      async () => {
+        await this.open();
+        await this.bookmarksTab.click();
+      },
+      { box: true },
+    );
+  }
+
+  async showHighlights(): Promise<void> {
+    await test.step(
+      'show highlights',
+      async () => {
+        await this.open();
+        await this.highlightsTab.click();
+      },
+      { box: true },
+    );
   }
 
   async goToBookmark(place: string): Promise<void> {
@@ -54,8 +98,7 @@ export class BookPanel {
     return test.step(
       `remove bookmark ${place}`,
       async () => {
-        const page = this.bookmarksTab.page();
-        const saved = page.waitForResponse(isPostTo(/^\/account\/bookmarks\/(?!new$)[^/]+$/));
+        const saved = this.page.waitForResponse(isPostTo(/^\/account\/bookmarks\/(?!new$)[^/]+$/));
         await this.bookmark(place).getByRole('button', { name: 'Remove bookmark' }).click();
         return saved;
       },

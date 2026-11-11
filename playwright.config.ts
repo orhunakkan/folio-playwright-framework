@@ -2,6 +2,18 @@ import { defineConfig, devices } from '@playwright/test';
 import { DEV_URL, env } from './src/config/env.ts';
 import { RUN_ID } from './src/config/run.ts';
 
+/**
+ * Every browser spec runs in each of these. Phone and tablet are narrow enough that the reader hides its side panel
+ * behind the Contents button. No WebKit for now: in Playwright 1.65 it never answers dev's basic-auth challenge
+ * while `httpCredentials.origin` is set, and that guard stays (see the blueprint's "Decided: devices and browsers").
+ */
+const BROWSER_PROJECTS: { name: string; device: keyof typeof devices }[] = [
+  { name: 'chromium', device: 'Desktop Chrome' },
+  { name: 'firefox', device: 'Desktop Firefox' },
+  { name: 'phone', device: 'Pixel 7' },
+  { name: 'tablet', device: 'Galaxy Tab S9' },
+];
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -47,6 +59,11 @@ export default defineConfig({
     // HTTP-level checks (`@http`), such as security headers. They don't depend on the browser or the screen,
     // so they run once, here, and the browser projects leave them out.
     { name: 'http', grep: /@http/, dependencies: ['setup'] },
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, grepInvert: /@http/, dependencies: ['setup'] },
+    ...BROWSER_PROJECTS.map(({ name, device }) => ({
+      name,
+      use: { ...devices[device] },
+      grepInvert: /@http/,
+      dependencies: ['setup'],
+    })),
   ],
 });
