@@ -53,6 +53,12 @@ export default defineConfig(
     },
   },
 
+  {
+    // Setup projects do work (e.g. the sweep) rather than check behaviour; the API client fails on a bad status.
+    files: ['tests/**/*.setup.ts'],
+    rules: { 'playwright/expect-expect': 'off' },
+  },
+
   // Turns off formatting rules that would fight Prettier. Keep last.
   prettier,
 );

@@ -164,3 +164,16 @@ sweep, and 404 for a missing or wrong token). On production it answers 404. The 
   start of each run.
 - Signing in over HTTP through `/login` needs an `Origin: https://dev.agenticlibrary.app` header, because Folio
   refuses cross-origin form posts. `signedIn: true` avoids that.
+
+How the framework uses it (step 3):
+
+- **Specs import `test` and `expect` from `src/fixtures/test.ts`**, never from `@playwright/test`, so every spec has
+  the same import whatever fixtures it uses.
+- **`testUser` creates the user through `context.request`.** That request context shares the browser context's
+  cookie jar, so the `__Host-session` cookie from `signedIn: true` lands in the browser with no cookie copying.
+- **Dev creates Pro users when no plan is sent.** `testUser` always sends one, `free` by default; a test that needs
+  Pro says so with `test.use({ testUserOptions: { plan: 'pro' } })`.
+- **Usernames look like `e2e-<12 hex>`.** The client's zod schema rejects any other name, and `deleteUser` refuses
+  to delete one, so a bug can't reach a real account.
+- **The sweep runs in a `setup` project** that the browser projects depend on. It only removes accounts older than
+  6 hours, so it is safe while another run (local or CI) is in progress.

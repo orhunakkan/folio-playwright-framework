@@ -28,5 +28,9 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
 
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    // Runs first: clears test users that earlier runs left behind (older than 6 hours).
+    { name: 'setup', testMatch: /\.setup\.ts$/ },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, dependencies: ['setup'] },
+  ],
 });
