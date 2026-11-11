@@ -32,7 +32,7 @@ third-party testing, limited mocking, public repository.
 | | Debugging | Screenshot and video on failure; traces locally only (they hold secrets) | Any failure is diagnosable | ✓ |
 | | CI | GitHub-hosted runners, pinned image, sharding + merged report, PR gate, nightly run | Public, fast, trustworthy | ✓ |
 | | Reporting | HTML report published to GitHub Pages | Visitors can see real results | ✓ |
-| | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright | ✓; Renovate app to be installed |
+| | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright | ✓ |
 | | Docs | README quickstart, CONTRIBUTING, ADRs | Shows judgment, not just code | ✓ |
 | **Showcase** | Visual | Screenshot tests on stable pages (home, catalogue) with masking | Catches visual regressions | |
 | | API layer | Typed API client + zod response schemas | Shows API testing alongside UI | |
@@ -141,7 +141,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 8. Cleanup and test data | Teardown project that deletes what the run created; Faker factories with a seed; run ID prefix on created data | A run leaves nothing behind on dev, and the data it creates is traceable to the run | ✓ |
 | 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | ✓ |
 | 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, every run in the pinned image (`npm test`); the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | ✓, without WebKit (see step 10's notes) |
-| 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | ✓; the Renovate app waits for the owner |
+| 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | ✓ |
 
 Steps 1–5 built the foundation, and steps 6–11 finish the Core tier. The mocking folder is not a step: it is built
 with the first test that needs one of the five allowed cases. The Showcase rows follow Core. More journeys follow
@@ -378,10 +378,14 @@ How the framework uses it (step 3):
 - **Renovate** (`renovate.json`, validated with `renovate-config-validator --strict`): weekly, Monday before 06:00
   UTC; releases at least 3 days old; `@playwright/test` and the `mcr.microsoft.com/playwright` image in one
   "Playwright" group, so the tag check in `meta/image.test.ts` passes on the same PR; TypeScript kept below 6.1;
-  `.nvmrc` and `@types/node` majors left to follow the image's Node; Actions stay pinned by digest. Its PRs face
+  `.nvmrc`, `engines` and `@types/node` majors left to follow the image's Node and npm; Actions stay pinned by
+  digest. Its PRs face
   the same `CI passed` check. It runs as the Renovate GitHub App, which the owner installs; a Renovate Action with
   the default token would open PRs that don't trigger CI.
 - **GitHub Pages is on** (2026-11-11), with "GitHub Actions" as its source. Before it was, the `pages` job failed
   with `Not Found` and the run on `main` showed red although every test passed. The first published report was
   scanned as served: clean.
-- **Waiting on the owner:** installing the Renovate app.
+- **The Renovate app is installed** (2026-11-11), for this repository only. Its Dependency Dashboard (issue #1)
+  found every npm package, the pinned Actions and the three uses of the Playwright image. Its first run wanted to
+  raise `engines` to Node `>=26.13.0` and npm `>=11.21.2` or 12, past the image's npm 11.20.0, so `engines` updates
+  are off: Node and npm come from the image.

@@ -30,6 +30,11 @@
       "enabled": false
     },
     {
+      "description": "Node and npm come with the Playwright image, so `engines` follows the image, not their releases.",
+      "matchDepTypes": ["engines"],
+      "enabled": false
+    },
+    {
       "description": "Node comes with the Playwright image, so .nvmrc and @types/node follow its major, not Node's releases.",
       "matchPackageNames": ["@types/node"],
       "matchUpdateTypes": ["major"],
