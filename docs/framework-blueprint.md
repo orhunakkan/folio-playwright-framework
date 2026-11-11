@@ -34,12 +34,12 @@ third-party testing, limited mocking, public repository.
 | | Reporting | HTML report published to GitHub Pages | Visitors can see real results | ✓ |
 | | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright | ✓ |
 | | Docs | README quickstart, CONTRIBUTING, ADRs | Shows judgment, not just code | ✓ |
-| **Showcase** | Visual | Screenshot tests on stable pages (home, library) with masking | Catches visual regressions | |
+| **Showcase** | Visual | Screenshot tests on stable pages (home, library) with masking | Catches visual regressions | ✓ |
 | | API layer | Typed API client + zod response schemas | Shows API testing alongside UI | |
 | | Assertions | A few custom matchers (`toBeSignedIn()`) | Domain-language tests | |
 | | Performance | Web-vitals budgets, nightly | Covers more than functional testing | |
 | | Security | Header checks (`@http`) | Cheap, meaningful checks | ✓ |
-| | Flakiness | Burn-in (`--repeat-each`) on changed specs in PRs | Stops flaky tests at the door | |
+| | Flakiness | Burn-in (`--repeat-each`) on changed specs in PRs | Stops flaky tests at the door | ✓ |
 | | AI | Playwright test agents (planner, healer) with docs | Fits an "agentic" story | |
 | **Skipped (with ADR)** | Third parties | No tests, no stubs | AGENTS.md rule | ✓ |
 | | Other mocking | No HAR replay or extra mocks | AGENTS.md rule | ✓ |
@@ -142,8 +142,8 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | ✓ |
 | 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, every run in the pinned image (`npm test`); the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | ✓, without WebKit (see step 10's notes) |
 | 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | ✓ |
-| 12. Flakiness | A CI job on pull requests that runs only the specs the PR changed, with `--repeat-each=5`; `CI passed` requires it | A PR that changes a spec runs it five times in CI, and the PR can't merge if a repeat fails | |
-| 13. Visual | Screenshot tests on stable pages (home, library) with dynamic parts masked; baselines made in the pinned image | They pass in every browser project, locally and in CI, and a deliberate visual change fails them | |
+| 12. Flakiness | A CI job on pull requests that runs only the specs the PR changed, with `--repeat-each=5`; `CI passed` requires it | A PR that changes a spec runs it five times in CI, and the PR can't merge if a repeat fails | ✓ |
+| 13. Visual | Screenshot tests on stable pages (home, library) with dynamic parts masked; baselines made in the pinned image | They pass in every browser project, locally and in CI, and a deliberate visual change fails them | ✓ |
 | 14. API layer | A typed client with zod response schemas for Folio's own endpoints, alongside the UI tests | An `@api` spec checks real responses against the schemas | |
 | 15. Custom matchers | A few domain matchers, e.g. `toBeSignedIn()`, via `expect.extend` in `src/fixtures/test.ts` | Used in at least two specs, with readable failure messages | |
 | 16. Performance | Web-vitals budgets (LCP, CLS, INP) measured in the browser, run nightly | The nightly run records the metrics in the report and fails when one is over budget | |
@@ -410,6 +410,10 @@ How the framework uses it (step 3):
 - **`CI passed` needs `burn-in`**, and on a pull request it must be `success`; on pushes, the nightly run and
   manual runs it is skipped. A fork's pull request skips it, like e2e. `meta/ci.test.ts` fails if any job other
   than `pages` (which runs after main has its result) is missing from `CI passed`'s `needs`.
+- **Shown on 2026-11-11 with a throwaway pull request (#2, closed unmerged).** A harmless change to
+  `tests/home.spec.ts` burned it in: 20 runs (5 × 4 projects), green. Then a test that fails only on its fourth
+  repeat: the e2e shards, which run each test once, passed it; burn-in failed it, `CI passed` went red, and GitHub
+  marked the pull request blocked.
 - **Its report is an HTML report**, scanned for secrets before upload (`burn-in-report`, 14 days), like the
   others. It is never published to GitHub Pages.
 - **Spec names reach the shell through an environment variable**, not a `${{ }}` expression in the script, so a
@@ -434,6 +438,8 @@ How the framework uses it (step 3):
 - **A deliberate change fails them**, and a test keeps proving it: it recolours the home page heading and is marked
   `test.fail`, like the console error proofs; its failure writes the expected, actual and diff images. It is
   skipped when baselines are being updated, or it would save its wrong screenshot as the baseline.
+- **They pass in CI** in every browser project (main's run after step 13's push, 2026-11-11), from the baselines
+  made locally in the image.
 - **CI never writes baselines**: `updateSnapshots` is `none` in CI (a missing baseline fails) and `missing`
   locally; `meta/config.test.ts` checks that and that `ci.yml` never passes `--update-snapshots`. Diff images go
   into the reports, which are scanned for secrets like everything else; the screenshots show signed-out pages.
