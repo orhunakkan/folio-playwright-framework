@@ -31,7 +31,7 @@ third-party testing, limited mocking, public repository.
 | | Guards | `forbidOnly`, plus a meta-test that checks the config | The suite can't silently rot | ✓ |
 | | Debugging | Screenshot and video on failure; traces locally only (they hold secrets) | Any failure is diagnosable | ✓ |
 | | CI | GitHub-hosted runners, pinned image, sharding + merged report, PR gate, nightly run | Public, fast, trustworthy | ✓ |
-| | Reporting | HTML report published to GitHub Pages | Visitors can see real results | Built; Pages to be switched on |
+| | Reporting | HTML report published to GitHub Pages | Visitors can see real results | ✓ |
 | | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright | ✓; Renovate app to be installed |
 | | Docs | README quickstart, CONTRIBUTING, ADRs | Shows judgment, not just code | ✓ |
 | **Showcase** | Visual | Screenshot tests on stable pages (home, catalogue) with masking | Catches visual regressions | |
@@ -141,7 +141,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 8. Cleanup and test data | Teardown project that deletes what the run created; Faker factories with a seed; run ID prefix on created data | A run leaves nothing behind on dev, and the data it creates is traceable to the run | ✓ |
 | 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | ✓ |
 | 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, every run in the pinned image (`npm test`); the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | ✓ locally, without WebKit; CI after the push |
-| 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | PR gate ✓; Pages and the Renovate app wait for the owner |
+| 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | ✓; the Renovate app waits for the owner |
 
 Steps 1–5 built the foundation, and steps 6–11 finish the Core tier. The mocking folder is not a step: it is built
 with the first test that needs one of the five allowed cases. The Showcase rows follow Core. More journeys follow
@@ -381,6 +381,7 @@ How the framework uses it (step 3):
   `.nvmrc` and `@types/node` majors left to follow the image's Node; Actions stay pinned by digest. Its PRs face
   the same `CI passed` check. It runs as the Renovate GitHub App, which the owner installs; a Renovate Action with
   the default token would open PRs that don't trigger CI.
-- **Waiting on the owner (2026-11-11):** switching GitHub Pages on, with "GitHub Actions" as its source, and
-  installing the Renovate app. Until Pages is on, the `pages` job fails with `Not Found`, and the run on `main`
-  shows red although every test passed.
+- **GitHub Pages is on** (2026-11-11), with "GitHub Actions" as its source. Before it was, the `pages` job failed
+  with `Not Found` and the run on `main` showed red although every test passed. The first published report was
+  scanned as served: clean.
+- **Waiting on the owner:** installing the Renovate app.
