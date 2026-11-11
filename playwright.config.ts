@@ -14,6 +14,9 @@ const BROWSER_PROJECTS: { name: string; device: keyof typeof devices }[] = [
   { name: 'tablet', device: 'Galaxy Tab S9' },
 ];
 
+/** Tests that run once, in the `http` project, rather than in every browser project. */
+const HTTP_TAGS = /@http|@api/;
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -66,13 +69,13 @@ export default defineConfig({
     { name: 'setup', testMatch: /\.setup\.ts$/, teardown: 'cleanup' },
     // Deletes any test user this run created and didn't delete, e.g. after a fixture teardown timed out.
     { name: 'cleanup', testMatch: /\.teardown\.ts$/ },
-    // HTTP-level checks (`@http`), such as security headers. They don't depend on the browser or the screen,
-    // so they run once, here, and the browser projects leave them out.
-    { name: 'http', grep: /@http/, dependencies: ['setup'] },
+    // HTTP-level checks (`@http`, e.g. security headers) and the API layer (`@api`, Folio's JSON endpoints). They
+    // don't depend on the browser or the screen, so they run once, here, and the browser projects leave them out.
+    { name: 'http', grep: HTTP_TAGS, dependencies: ['setup'] },
     ...BROWSER_PROJECTS.map(({ name, device }) => ({
       name,
       use: { ...devices[device] },
-      grepInvert: /@http/,
+      grepInvert: HTTP_TAGS,
       dependencies: ['setup'],
     })),
   ],

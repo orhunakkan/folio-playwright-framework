@@ -1,4 +1,5 @@
 import { expect, test as base } from '@playwright/test';
+import { FolioApi } from '../api/folio-api.ts';
 import { TestApi, type CreateUserOptions, type TestUser } from '../api/test-api.ts';
 import { scanAccessibility, type AccessibilityViolation } from '../checks/accessibility.ts';
 import { watchConsoleErrors } from '../checks/console-errors.ts';
@@ -24,6 +25,13 @@ interface Fixtures {
    * A test that only needs the session, not the user's details, requests it as `testUser: _signedIn`.
    */
   testUser: TestUser;
+
+  /**
+   * Folio's own JSON endpoints, through this test's browser context: signed in when the test also requests
+   * `testUser`. `visitorApi` calls them as a signed-out visitor, with its own cookie jar.
+   */
+  folioApi: FolioApi;
+  visitorApi: FolioApi;
 
   /** Seeded factories for the data a test types into Folio, each value prefixed with the run ID. */
   testData: TestData;
@@ -82,6 +90,14 @@ export const test = base.extend<Fixtures>({
     // Its own timeout, so time spent queueing for the test API doesn't count against the test's 30 s.
     { timeout: 60_000 },
   ],
+
+  folioApi: async ({ context }, use) => {
+    await use(new FolioApi(context.request));
+  },
+
+  visitorApi: async ({ request }, use) => {
+    await use(new FolioApi(request));
+  },
 
   testData: async ({}, use, testInfo) => {
     const seed = testSeed(FAKER_SEED, testInfo.testId, testInfo.repeatEachIndex);

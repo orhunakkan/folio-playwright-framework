@@ -9,7 +9,12 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every 
 
 - **Import `test` and `expect` from `src/fixtures/test.ts`**, never from `@playwright/test`.
 - **One journey per file**, named after what the user does. Tag the describe or test `@smoke` or `@regression`;
-  checks that need no browser (headers, cookies, status codes) are `@http`, and run in the `http` project only.
+  checks that need no browser (headers, cookies, status codes) are `@http`, and tests of Folio's JSON endpoints are
+  `@api`. Both run in the `http` project only.
+- **API tests use `folioApi`** (signed in, with `testUser`) **or `visitorApi`** (signed out), from
+  `src/api/folio-api.ts`. Each method returns Folio's response: assert its status, then read the body with
+  `readJson(response, Schema)` and a schema from `src/api/schemas.ts`. Never attach or print a raw body; the account
+  export holds IP addresses.
 - **Get a user from the `testUser` fixture.** It creates a fresh account through the test API, signs it in by
   cookie, and deletes it after the test. A test that only needs the session writes `testUser: _signedIn`. A test
   that needs Pro says `test.use({ testUserOptions: { plan: 'pro' } })`. Drive the sign-in form only in a test whose

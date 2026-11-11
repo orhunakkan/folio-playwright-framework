@@ -443,3 +443,31 @@ How the framework uses it (step 3):
 - **CI never writes baselines**: `updateSnapshots` is `none` in CI (a missing baseline fails) and `missing`
   locally; `meta/config.test.ts` checks that and that `ci.yml` never passes `--update-snapshots`. Diff images go
   into the reports, which are scanned for secrets like everything else; the screenshots show signed-out pages.
+
+## Decided: API layer (step 14)
+
+- **Folio has a JSON API of its own**, separate from its framework's server functions. Found on 2026-11-11 by
+  recording the reader's requests: `POST /account/bookmarks/new` (201), `POST /account/bookmarks/<id>`
+  `{ intent: 'delete' }` (200), `POST /account/highlights/new` (201), `POST /account/highlights/<id>` with
+  `{ intent: 'update', note }` or `{ intent: 'delete' }` (200), `POST /account/sync` (200), and
+  `GET /account/export` (200). Also `GET /healthz` (`ok`) and `GET /manifest.webmanifest`. Errors are JSON:
+  400 `invalid`, 401 `signed_out`, 404 `not_found`; a write without dev's `Origin` gets a plain `403 Forbidden`.
+  Highlight colours are `yellow`, `green`, `blue` and `pink`; others get 400.
+- **Not tested: `/_serverFn/<hash>`.** Most page data comes from TanStack Start server functions, whose names are
+  hashes that change with each build and whose payloads are a framework serialization format. They are internal
+  to Folio's build, not an API.
+- **`src/api/folio-api.ts` is the client, `src/api/schemas.ts` the schemas.** Like a page object, the client
+  doesn't assert: each method returns the response, wrapped in a `test.step`, and the spec checks the status and
+  reads the body with `readJson(response, Schema)`. Every write sends `Origin: <dev>`, as the reader does; a
+  test can leave it out to check the 403.
+- **Schemas check shape and types, and allow extra fields**: a field Folio adds doesn't break them, one it drops or
+  retypes does. They come from dev's real answers, not from Folio's source.
+- **The account export holds IP addresses** (sessions and activity). In CI that is the runner's, and the report
+  is public. So the export's schema leaves IPs out (zod strips unknown keys, so the parsed value has none),
+  `readJson` reports a mismatch by path and message, never the value (`meta/read-json.test.ts`), and specs never
+  attach or print a raw body.
+- **Fixtures:** `folioApi` uses the test's `context.request`, which `testUser` signs in; `visitorApi` uses the
+  `request` fixture, signed out. Both are redacted, like every request context the framework hands out.
+- **`@api` runs in the `http` project**, with `@http`: neither needs a browser page or a screen size. The browser
+  projects leave both out. `--grep @api` runs them alone. `tests/account-api.spec.ts` passed `--repeat-each=5`
+  (2026-11-11).

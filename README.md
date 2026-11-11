@@ -64,7 +64,7 @@ run behaves and looks the same on macOS, on any Linux distribution, and in CI. Y
 | Command | What it does |
 | --- | --- |
 | `npm test` | Every spec against dev, in every project (Chromium, Firefox, phone, tablet, and `http`) |
-| `npm test -- --grep @smoke` | Only tests tagged `@smoke` (or `@regression`, or `@http`) |
+| `npm test -- --grep @smoke` | Only tests tagged `@smoke` (or `@regression`, `@http`, `@api` or `@visual`) |
 | `npm test -- --project=phone` | One project only |
 | `npm test -- tests/bookmarks.spec.ts --repeat-each=5` | One spec, five times over, to show it isn't flaky |
 | `npm test -- --grep @visual --update-snapshots` | Remakes the visual baselines, after a deliberate design change |
@@ -81,7 +81,7 @@ run behaves and looks the same on macOS, on any Linux distribution, and in CI. Y
 | `tests/` | Specs, one user journey per file; `*.setup.ts` runs first and `*.teardown.ts` last (test user cleanup) |
 | `src/fixtures/test.ts` | The `test` and `expect` every spec imports, with the framework's fixtures |
 | `src/pages/`, `src/components/` | Page and component objects: locators and user-intent methods, no assertions |
-| `src/api/` | The client for Folio's test API |
+| `src/api/` | Clients for Folio's test API and its own JSON endpoints, with their zod schemas |
 | `src/data/` | Seeded Faker factories for the data tests type into Folio |
 | `src/checks/` | The accessibility scan, the horizontal overflow check, and the console error check |
 | `src/config/` | The dev URL, the typed (zod) env, the run ID, and the image every run uses |
@@ -106,6 +106,9 @@ Some of the choices behind it:
   a screenshot comes out the same on any machine and in CI.
 - **HTTP-level checks** (`@http`), such as security headers and the session cookie, run once in their own project,
   without a browser.
+- **An API layer** (`@api`): a typed client for Folio's own JSON endpoints (bookmarks, highlights, reading places,
+  the account export), whose responses are checked against zod schemas, and how Folio refuses bad requests. It runs
+  once, in the same project as `@http`.
 - **No traces in CI, and redacted API errors.** Traces record request headers, which hold dev's credentials, so a
   public CI run records none; and a failed API call's error, which lists those headers, is redacted before any
   reporter prints it.
