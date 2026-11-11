@@ -24,8 +24,8 @@ third-party testing, limited mocking, public repository.
 | | Config | Typed env (zod), explicit timeouts, dev URL in one place | Fails fast and stays predictable | ✓ |
 | | Mocking | One small folder with only the five allowed cases | Follows AGENTS.md, nothing more | |
 | | Accessibility | Axe scan per journey | A11y is part of "done" | ✓ |
-| | Responsive | Desktop, phone and tablet projects; horizontal overflow check | Proves layouts hold up | |
-| | Cross-browser | Chromium, Firefox and WebKit on desktop | Wider coverage than Folio's own suite | |
+| | Responsive | Desktop, phone and tablet projects; horizontal overflow check | Proves layouts hold up | ✓ |
+| | Cross-browser | Chromium, Firefox and WebKit on desktop | Wider coverage than Folio's own suite | Partly: no WebKit yet |
 | | Tags & skips | `@smoke`, `@regression`, `@http`; conditional skips with reasons | Targeted runs, honest skips | ✓ |
 | | Reporting in tests | `test.step()` in page objects | Reports and traces read like a story | ✓ |
 | | Guards | `forbidOnly`, plus a meta-test that checks the config | The suite can't silently rot | ✓ |
@@ -71,7 +71,8 @@ no runtime code. Versions were current on npm on 2026-11-10.
     "npm": ">=11"
   },
   "scripts": {
-    "setup": "npm ci && husky && playwright install chromium firefox webkit"
+    "setup": "npm ci && husky && node scripts/playwright.ts --version",
+    "test": "node scripts/playwright.ts test"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
@@ -111,13 +112,10 @@ Notes:
 - **Dependency install scripts are blocked** with `ignore-scripts=true` in `.npmrc`, as a supply-chain defence. None
   of these packages need install scripts. The setting also skips this project's own `prepare` script, so Husky is
   run explicitly by `npm run setup` instead.
-- **Browsers run natively locally, in the official container in CI.** `npm run setup` installs browsers without
-  `--with-deps`, which needs `sudo` and only works on Debian and Ubuntu; there, if a browser reports missing
-  libraries, run `sudo npx playwright install-deps` once. CI runs in the pinned `mcr.microsoft.com/playwright` image,
-  whose tag must match `@playwright/test` (Renovate bumps both together). Visual baselines are made in that same
-  image, through a `test:docker` script added with the visual tests, because screenshots differ between systems.
-  The same script runs WebKit on Linux distributions Playwright doesn't support, such as Arch, where WebKit can't
-  find the system libraries it was built against.
+- **Every run uses the pinned `mcr.microsoft.com/playwright` image, locally and in CI** (decided in step 10; it
+  replaces native browsers locally). No machine installs browsers. The tag follows `@playwright/test`, so Renovate
+  bumping the library moves the image too; a meta-test keeps CI's tag in step. Visual baselines will come from the
+  same image, so screenshots match everywhere.
 - **The ESLint config is plain JavaScript** (`eslint.config.js` with `// @ts-check`). A TypeScript config would need
   `jiti` or an unstable ESLint flag.
 - **Markdown is hand-formatted, not run through Prettier**, which would only pad the tables. Docs wrap at 120
@@ -142,7 +140,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 7. Console errors | Auto fixture that fails a test on console errors or page errors; first check what dev logs today (e.g. the Cloudflare beacon) | Every test fails on an unexpected console or page error, and a deliberately broken page proves it | ✓ |
 | 8. Cleanup and test data | Teardown project that deletes what the run created; Faker factories with a seed; run ID prefix on created data | A run leaves nothing behind on dev, and the data it creates is traceable to the run | ✓ |
 | 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | ✓ |
-| 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, a `test:docker` script for WebKit where Playwright doesn't support the Linux distribution; the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | |
+| 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, every run in the pinned image (`npm test`); the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | ✓ locally, without WebKit; CI after the push |
 | 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | |
 
 Steps 1–5 built the foundation, and steps 6–11 finish the Core tier. The mocking folder is not a step: it is built
@@ -238,6 +236,8 @@ How the framework uses it (step 3):
 - **The README quickstart was checked in a fresh clone** on 2026-11-11: `npm run setup`, fill in `.env`,
   `npm test` → `6 passed`. On Arch, `npm run setup` warns that the OS is unsupported and libraries are missing;
   the warning is about WebKit, and setup still exits 0. An empty `.env` stops the run and names the variables.
+  Rechecked in step 10, when runs moved into the pinned image: setup pulls the image and prints its Playwright
+  version, and `npm test` → `49 passed`, with no warnings on Arch.
 - **ADRs live in [docs/adr/](adr/)**, numbered, each with Status, Date, Context, Decision and Consequences, and
   listed in the folder's README. Every Skipped row has one (0001–0008). A changed decision is marked Superseded and
   gets a new record.
@@ -313,3 +313,33 @@ How the framework uses it (step 3):
 - **For step 11: the JSON reporter writes the whole config into its output, basic-auth password included.** CI
   doesn't use it, and the HTML report was clean. Sharding uploads blob reports as artifacts, so check them for
   secrets before the first sharded run; they may embed the config the same way.
+
+## Decided: devices and browsers (step 10)
+
+- **Every run, everywhere, is in the pinned image.** `npm test` runs `scripts/playwright.ts`, which starts
+  `mcr.microsoft.com/playwright:v<installed @playwright/test>-noble` (`src/config/image.ts`) with the checkout
+  mounted at the same path, and runs Playwright there. CI's jobs already run in that image, so there the script
+  starts Playwright directly (the image sets `PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`). One environment for macOS,
+  every Linux distribution and CI: the same browsers, Node (26.13.0), fonts and libraries, and the same output.
+  - Secrets are passed by name only (`--env NAME`), or read from `.env` in the mounted checkout, so no value is in
+    a command line. Files are written as the host user (`--user`), so nothing in the checkout ends up owned by root.
+  - The project has no native modules, so the host's `node_modules` works in the container.
+  - `npm run test:ui` serves UI mode on `127.0.0.1:9324`. Headed mode and the Inspector need a screen, so they're
+    not offered; `npx playwright test` still runs natively, but the docs point to `npm test`.
+- **Projects:** `chromium` (Desktop Chrome), `firefox` (Desktop Firefox), `phone` (Pixel 7), `tablet` (Galaxy
+  Tab S9), plus `http`. Every browser spec runs in all four.
+- **No WebKit yet.** In Playwright 1.65, WebKit never answers dev's basic-auth challenge while
+  `httpCredentials.origin` is set: every page is a `401`. Checked on 2026-11-11 with `https://…`, `:443`, a trailing
+  slash, upper case and host-only origins; without `origin` it works. The origin guard stays, and so does the
+  WebKit gap, until Playwright fixes it. Considered and not taken: dropping `origin` for WebKit projects (WebKit
+  would then answer any host's challenge with dev's credentials), and adding the header to dev's requests through
+  `context.route`. The tablet is a Chromium device (Galaxy Tab S9) instead of an iPad, for the same reason.
+- **The reader's side panel on narrow screens.** Below roughly 850–900 px wide (Folio's CSS, not a standard
+  breakpoint), the panel is hidden and a Contents button (`aria-haspopup="dialog"`) opens it as a modal dialog
+  named Contents, with the same tabs. `BookPanel` finds the panel in either form, and its `show…` methods press
+  Contents first when it's showing and not already expanded (pressing Note opens the dialog itself). CSS picks the
+  layout, so it is settled when the page loads; the breakpoint isn't copied into the tests.
+- **A modal dialog hides the rest of the page from role locators** until it closes, so `bookmarks.spec.ts` checks
+  the bookmark button before opening the panel.
+- **The narrow reader shows "Ask this book"**, a third-party feature, where the wide one shows "Ask". Tests press
+  neither.

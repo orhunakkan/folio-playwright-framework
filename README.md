@@ -12,17 +12,18 @@ source is private and is not part of this repository; the tests drive its dev en
 
 ## Quickstart
 
-You need **Node 26** or newer (see [.nvmrc](.nvmrc)), **npm 11** or newer, and git.
+You need **Node 26** or newer (see [.nvmrc](.nvmrc)), **npm 11** or newer, git, and
+[Docker](https://docs.docker.com/get-started/get-docker/) (see [Where tests run](#where-tests-run)).
 
 ```sh
 git clone https://github.com/orhunakkan/folio-playwright-framework.git
 cd folio-playwright-framework
-npm run setup          # npm ci, Git hooks, and the Playwright browsers
+npm run setup          # npm ci, Git hooks, and the pinned Playwright image
 cp .env.example .env   # then fill in the three values (see below)
 npm test
 ```
 
-`npm test` runs every spec against dev and ends with a summary such as `12 passed`, with no failures.
+`npm test` runs every spec against dev and ends with a summary such as `49 passed`, with no failures.
 `npx playwright show-report` opens the HTML report.
 
 ### Credentials
@@ -41,20 +42,29 @@ value stops the run at once and names the variable.
 Without them you can still run `npm run check` (typecheck, lint, format and the config meta-tests), and the
 [CI runs](https://github.com/orhunakkan/folio-playwright-framework/actions) show the full suite passing.
 
-### If a browser won't start
+### Where tests run
 
-- **Debian or Ubuntu:** if a browser reports missing libraries, run `sudo npx playwright install-deps` once.
-- **Other Linux distributions** (e.g. Arch): `npm run setup` warns that the OS is not officially supported and that
-  libraries are missing. The warning is about WebKit, which can't find the system libraries it was built against;
-  Chromium and Firefox run natively, and setup still succeeds.
+Every run, on any machine and in CI, uses the same pinned image, `mcr.microsoft.com/playwright`, whose tag follows
+the installed `@playwright/test`. So the browsers, Node, fonts and system libraries are the same everywhere, and a
+run behaves and looks the same on macOS, on any Linux distribution, and in CI. Your machine needs no browsers.
+
+- `npm test` starts the image with your checkout mounted at the same path, and runs Playwright in it. The first run
+  (or `npm run setup`) downloads the image, about 2 GB. Results and the report are written to your checkout, owned
+  by you. CI's jobs already run in the image, so there `npm test` starts Playwright directly.
+- Use `npm test`, not `npx playwright test`: the second runs on your machine, with whatever browsers it has.
+- Headed mode and the Playwright Inspector need a screen, which the container doesn't have. `npm run test:ui`
+  serves UI mode to your own browser instead, at <http://localhost:9324>, for watching and debugging.
 
 ## Commands
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | Every spec against dev |
-| `npx playwright test --grep @smoke` | Only tests tagged `@smoke` (or `@regression`, or `@http`) |
-| `npx playwright test tests/bookmarks.spec.ts --repeat-each=5` | One spec, five times over, to show it isn't flaky |
+| `npm test` | Every spec against dev, in every project (Chromium, Firefox, phone, tablet, and `http`) |
+| `npm test -- --grep @smoke` | Only tests tagged `@smoke` (or `@regression`, or `@http`) |
+| `npm test -- --project=phone` | One project only |
+| `npm test -- tests/bookmarks.spec.ts --repeat-each=5` | One spec, five times over, to show it isn't flaky |
+| `npm run test:ui` | UI mode, at <http://localhost:9324> |
+| `npx playwright show-report` | Opens the last run's HTML report |
 | `npm run check` | Typecheck, lint, format check and config meta-tests; needs no credentials |
 | `npm run format` | Formats the code with Prettier |
 
@@ -68,7 +78,8 @@ Without them you can still run `npm run check` (typecheck, lint, format and the 
 | `src/api/` | The client for Folio's test API |
 | `src/data/` | Seeded Faker factories for the data tests type into Folio |
 | `src/checks/` | The accessibility scan, the horizontal overflow check, and the console error check |
-| `src/config/` | The dev URL, the typed (zod) env, and the run ID |
+| `src/config/` | The dev URL, the typed (zod) env, the run ID, and the image every run uses |
+| `scripts/playwright.ts` | Runs Playwright in that image; `npm test` uses it |
 | `meta/` | Tests of the Playwright config itself, run with `node --test` |
 
 Some of the choices behind it:
@@ -78,6 +89,9 @@ Some of the choices behind it:
   any user a run left behind, so a run leaves nothing on dev.
 - **Test data is seeded and traceable.** Text a test types comes from Faker, starts with the run's ID (shown in
   the report), and comes out the same again with `FAKER_SEED=<seed from the report> npm test`.
+- **One environment for every run:** the pinned Playwright image, locally and in CI.
+- **Desktop, phone and tablet projects.** Page objects handle the layouts, e.g. the reader's side panel, which
+  narrow screens open as a dialog.
 - **Role and label locators only**, enforced by ESLint, so the tests read like a user and catch accessibility gaps.
 - **Every journey ends with an axe scan** (WCAG 2.2 AA) and a check that the page doesn't scroll sideways.
 - **Every test fails on a console error or an uncaught page error**, checked by the framework's `context` fixture.

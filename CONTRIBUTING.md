@@ -19,6 +19,10 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every 
 - **Put locators and actions in page objects** (`src/pages/`) **and component objects** (`src/components/`), and
   inject them as fixtures in `src/fixtures/test.ts`. Methods say what the user does (`bookmarkThisPage()`), are
   wrapped in `test.step(…, { box: true })`, and never assert.
+- **One spec for every screen.** Each spec runs on desktop, phone and tablet. Where the layouts differ, the page
+  object handles it (e.g. `BookPanel` opens the reader's panel on narrow screens), so specs never branch on the
+  project. A modal dialog hides the rest of the page from role locators until it closes, so check the page behind it
+  before opening one.
 - **Use role and label locators.** ESLint rejects CSS, XPath, test IDs, text and placeholder locators.
 - **Assert what the user sees, and the save.** Folio updates the UI before a save finishes, so a method that saves
   returns the save's `Response` and the spec asserts its status.
@@ -46,8 +50,8 @@ Explore the real dev site before writing a selector or an assertion. Don't guess
 
 ```sh
 npm run check                                                 # typecheck, lint, format, meta-tests
-npx playwright test                                           # the whole suite against dev
-npx playwright test tests/<your-spec>.spec.ts --repeat-each=5 # a new or changed spec, to show it isn't flaky
+npm test                                                      # the whole suite against dev, in every project
+npm test -- tests/<your-spec>.spec.ts --repeat-each=5         # a new or changed spec, to show it isn't flaky
 ```
 
 - **Small commits** in [Conventional Commits](https://www.conventionalcommits.org/) style, e.g.
@@ -55,4 +59,4 @@ npx playwright test tests/<your-spec>.spec.ts --repeat-each=5 # a new or changed
 - **CI must pass.** Pull requests from forks get no secrets, so their e2e job is skipped; a maintainer runs it.
 - **A new decision** that leaves something out on purpose gets an ADR in [docs/adr/](docs/adr/).
 - **Dependencies:** npm only, and commit `package-lock.json`. The Playwright image tag in
-  [.github/workflows/ci.yml](.github/workflows/ci.yml) must match `@playwright/test`.
+  [.github/workflows/ci.yml](.github/workflows/ci.yml) must match `@playwright/test`; `npm run check` fails if not.
