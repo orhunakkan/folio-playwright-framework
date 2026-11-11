@@ -15,6 +15,13 @@ const TestUserSchema = z.object({
 });
 export type TestUser = z.infer<typeof TestUserSchema>;
 
+/**
+ * Dev handles test API writes one at a time: a create takes about 0.5–1.5 s on its own, a delete about 1 s.
+ * With many workers they queue (10 creates at once took up to 10 s), so these calls get a longer timeout
+ * than page actions.
+ */
+const TEST_API_TIMEOUT = 30_000;
+
 const SweepSchema = z.object({ deleted: z.number().int().nonnegative() });
 
 export interface CreateUserOptions {
@@ -67,6 +74,7 @@ export class TestApi {
   #call(method: 'post' | 'delete', path: string, data?: object): Promise<APIResponse> {
     return this.#request[method](path, {
       headers: { 'X-Folio-Test-Token': env.FOLIO_TEST_API_TOKEN },
+      timeout: TEST_API_TIMEOUT,
       ...(data && { data }),
     });
   }

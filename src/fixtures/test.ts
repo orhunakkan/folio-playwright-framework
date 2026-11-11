@@ -1,5 +1,8 @@
 import { test as base } from '@playwright/test';
 import { TestApi, type CreateUserOptions, type TestUser } from '../api/test-api.ts';
+import { scanAccessibility, type AccessibilityViolation } from '../checks/accessibility.ts';
+import { horizontalOverflow } from '../checks/layout.ts';
+import { ReaderPage } from '../pages/reader-page.ts';
 
 export { expect } from '@playwright/test';
 
@@ -8,25 +11,51 @@ export type TestUserOptions = Pick<CreateUserOptions, 'plan' | 'starter'>;
 interface Fixtures {
   /** Options for `testUser`. Set them per file or per describe with `test.use({ testUserOptions: { … } })`. */
   testUserOptions: TestUserOptions;
-  /** A fresh test account, already signed in in this test's browser context, and deleted after the test. */
+  /**
+   * A fresh test account, already signed in in this test's browser context, and deleted after the test.
+   * A test that only needs the session, not the user's details, requests it as `testUser: _signedIn`.
+   */
   testUser: TestUser;
+
+  readerPage: ReaderPage;
+
+  /** Scans the page as it is now (WCAG 2.2 AA). Assert `expect(await scanAccessibility()).toEqual([])`. */
+  scanAccessibility: () => Promise<AccessibilityViolation[]>;
+  /** Pixels the page is wider than the viewport. Assert `await expect.poll(horizontalOverflow).toBe(0)`. */
+  horizontalOverflow: () => Promise<number>;
 }
 
 /** The one module specs import `test` and `expect` from. */
 export const test = base.extend<Fixtures>({
   testUserOptions: [{}, { option: true }],
 
-  testUser: async ({ context, testUserOptions }, use, testInfo) => {
-    // `context.request` shares the browser context's cookie jar, so the session cookie that
-    // `signedIn: true` sets lands straight in the browser: the user is signed in without the form.
-    const testApi = new TestApi(context.request);
-    // Dev makes Pro users when no plan is given. Default to Free, so a test that needs Pro says so.
-    const user = await testApi.createUser({ plan: 'free', ...testUserOptions, signedIn: true });
-    testInfo.annotations.push({ type: 'test user', description: user.username });
+  testUser: [
+    async ({ context, testUserOptions }, use, testInfo) => {
+      // `context.request` shares the browser context's cookie jar, so the session cookie that
+      // `signedIn: true` sets lands straight in the browser: the user is signed in without the form.
+      const testApi = new TestApi(context.request);
+      // Dev makes Pro users when no plan is given. Default to Free, so a test that needs Pro says so.
+      const user = await testApi.createUser({ plan: 'free', ...testUserOptions, signedIn: true });
+      testInfo.annotations.push({ type: 'test user', description: user.username });
 
-    await use(user);
+      await use(user);
 
-    // Runs whether the test passed or failed.
-    await testApi.deleteUser(user.username);
+      // Runs whether the test passed or failed.
+      await testApi.deleteUser(user.username);
+    },
+    // Its own timeout, so time spent queueing for the test API doesn't count against the test's 30 s.
+    { timeout: 60_000 },
+  ],
+
+  readerPage: async ({ page }, use) => {
+    await use(new ReaderPage(page));
+  },
+
+  scanAccessibility: async ({ page }, use, testInfo) => {
+    await use(() => scanAccessibility(page, testInfo));
+  },
+
+  horizontalOverflow: async ({ page }, use) => {
+    await use(() => horizontalOverflow(page));
   },
 });

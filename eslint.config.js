@@ -18,6 +18,11 @@ export default defineConfig(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      // A leading underscore marks a deliberately unused binding, e.g. a fixture requested only for its
+      // side effect: `async ({ page, testUser: _signedIn }) => …` signs the test in without reading the user.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    },
   },
   {
     // This file is plain JS (ESLint loads it without a TS loader), so it is outside the TS project.

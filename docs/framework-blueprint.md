@@ -177,3 +177,28 @@ How the framework uses it (step 3):
   to delete one, so a bug can't reach a real account.
 - **The sweep runs in a `setup` project** that the browser projects depend on. It only removes accounts older than
   6 hours, so it is safe while another run (local or CI) is in progress.
+- **Dev handles test API writes one at a time.** A create takes about 0.5–1.5 s alone and a delete about 1 s;
+  10 creates at once took up to 10 s. Test API calls get a 30 s timeout, and `testUser` has its own 60 s fixture
+  timeout so queueing doesn't count against the test.
+
+## Decided: how a spec is written (step 4)
+
+[tests/bookmarks.spec.ts](../tests/bookmarks.spec.ts) is the model for later journeys.
+
+- **Page objects in `src/pages/`, component objects in `src/components/`**, all injected as fixtures. They expose
+  locators and user-intent methods, wrap each method in `test.step(…, { box: true })`, and never assert.
+- **A test that needs a session but not the user's details** requests `testUser: _signedIn`. The underscore tells
+  TypeScript and ESLint that it is unused on purpose.
+- **A method that saves something returns the save's `Response`**, and the spec asserts its status. Folio updates
+  the UI before the save finishes (the bookmark button shows pressed at once), so the UI alone doesn't prove the
+  save, and leaving the page too early could cancel it.
+- **Prove a list has loaded before asserting what it lacks.** After a reload a list may be empty only because it
+  hasn't loaded yet, so the test keeps one item that must reappear.
+- **Accessibility and overflow are fixtures**: `expect(await scanAccessibility()).toEqual([])` (WCAG 2.2 AA) and
+  `await expect.poll(horizontalOverflow).toBe(0)`, run once per journey at its richest state.
+- **Known Folio accessibility bugs** are listed in `KNOWN_ISSUES` in `src/checks/accessibility.ts`, each left out
+  of the scan as narrowly as possible, noted on every test that scans, and deleted once dev has the fix.
+- **Every dev page loads Cloudflare's analytics beacon** (`static.cloudflareinsights.com`). It is site
+  infrastructure, not a Folio feature, so it is neither tested nor blocked.
+- **On phone and tablet widths the reader hides its side panel**, so the Bookmarks tab isn't visible. The page
+  object will need a step to open the panel when those projects are added.
