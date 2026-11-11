@@ -16,6 +16,8 @@ const BROWSER_PROJECTS: { name: string; device: keyof typeof devices }[] = [
 
 /** Tests that run once, in the `http` project, rather than in every browser project. */
 const HTTP_TAGS = /@http|@api/;
+/** Tests that run in the `performance` project only, rather than in every browser project. */
+const PERFORMANCE_TAG = /@perf/;
 
 export default defineConfig({
   testDir: './tests',
@@ -72,10 +74,15 @@ export default defineConfig({
     // HTTP-level checks (`@http`, e.g. security headers) and the API layer (`@api`, Folio's JSON endpoints). They
     // don't depend on the browser or the screen, so they run once, here, and the browser projects leave them out.
     { name: 'http', grep: HTTP_TAGS, dependencies: ['setup'] },
+    // Web-vitals budgets (`@perf`). Only Chromium reports layout shifts and interactions. Only when asked
+    // (PERFORMANCE=true), so everyday runs stay fast: nightly in CI, alone, so other tests don't skew the timings.
+    ...(env.PERFORMANCE
+      ? [{ name: 'performance', grep: PERFORMANCE_TAG, use: { ...devices['Desktop Chrome'] }, dependencies: ['setup'] }]
+      : []),
     ...BROWSER_PROJECTS.map(({ name, device }) => ({
       name,
       use: { ...devices[device] },
-      grepInvert: HTTP_TAGS,
+      grepInvert: [HTTP_TAGS, PERFORMANCE_TAG],
       dependencies: ['setup'],
     })),
   ],

@@ -36,7 +36,7 @@ third-party testing, limited mocking, public repository.
 | | Docs | README quickstart, CONTRIBUTING, ADRs | Shows judgment, not just code | ✓ |
 | **Showcase** | Visual | Screenshot tests on stable pages (home, library) with masking | Catches visual regressions | ✓ |
 | | API layer | Typed API client + zod response schemas | Shows API testing alongside UI | ✓ |
-| | Assertions | A few custom matchers (`toBeSignedIn()`) | Domain-language tests | |
+| | Assertions | A few custom matchers (`toBeSignedIn()`) | Domain-language tests | ✓ |
 | | Performance | Web-vitals budgets, nightly | Covers more than functional testing | |
 | | Security | Header checks (`@http`) | Cheap, meaningful checks | ✓ |
 | | Flakiness | Burn-in (`--repeat-each`) on changed specs in PRs | Stops flaky tests at the door | ✓ |
@@ -145,7 +145,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 12. Flakiness | A CI job on pull requests that runs only the specs the PR changed, with `--repeat-each=5`; `CI passed` requires it | A PR that changes a spec runs it five times in CI, and the PR can't merge if a repeat fails | ✓ |
 | 13. Visual | Screenshot tests on stable pages (home, library) with dynamic parts masked; baselines made in the pinned image | They pass in every browser project, locally and in CI, and a deliberate visual change fails them | ✓ |
 | 14. API layer | A typed client with zod response schemas for Folio's own endpoints, alongside the UI tests | An `@api` spec checks real responses against the schemas | ✓ |
-| 15. Custom matchers | A few domain matchers, e.g. `toBeSignedIn()`, via `expect.extend` in `src/fixtures/test.ts` | Used in at least two specs, with readable failure messages | |
+| 15. Custom matchers | A few domain matchers, e.g. `toBeSignedIn()`, via `expect.extend` in `src/fixtures/test.ts` | Used in at least two specs, with readable failure messages | ✓ |
 | 16. Performance | Web-vitals budgets (LCP, CLS, INP) measured in the browser, run nightly | The nightly run records the metrics in the report and fails when one is over budget | |
 | 17. AI | Playwright's test agents (planner, generator, healer), set up as Playwright documents them, with docs on using them within AGENTS.md | The agent files are committed, the docs explain them, and one plan made with them for a real journey is in the repo | |
 | 18. More journeys + mocking | New journeys (e.g. highlights, reading settings, search, offline reading, read-aloud), building `src/mocking/` with the first test that needs one of the five allowed cases | The Mocking row holds only cases real specs use, and each case has a spec | |
@@ -507,3 +507,26 @@ How the framework uses it (step 3):
   `SERVER_FUNCTIONS` matches them as a group.
 - **ESLint keeps fakes in `src/mocking/`**: `route`, `routeFromHAR`, `routeWebSocket`, `unroute`, `setOffline`,
   `addInitScript` and `.clock` are errors anywhere else in `tests/` and `src/`.
+
+## Decided: performance (step 16)
+
+- **Measured in the browser, with no package**: `src/checks/web-vitals.ts` reads Largest Contentful Paint and layout
+  shifts from buffered `PerformanceObserver`s (they are not in `performance.getEntriesByType`, which at first gave
+  a NaN LCP and a false CLS of 0), and Interaction to Next Paint from Event Timing entries recorded around one
+  interaction. CLS is the largest burst of shifts (less than 1 s apart, 5 s at most), as web-vitals defines it.
+- **Budgets are Google's "good" thresholds**: LCP ≤ 2500 ms, CLS ≤ 0.1, INP ≤ 200 ms. On 2026-11-11 dev measured
+  LCP 300–700 ms, CLS under 0.01 and interactions of 16–24 ms, so the budgets catch a real regression without
+  flaking on network noise. No CPU or network throttling: on shared CI runners it would add noise, not signal.
+- **`tests/performance.spec.ts` (`@perf`)**: the home page (open a question), the library (filter by a
+  collection) and the reader (turn a page), signed out. A `test.fail` test holds the library's document back 3 s
+  (`slowDown`, the "slow responses" case) and must break the LCP budget, so the check proves itself on every run.
+  `toBeWithinBudgets()` (a fourth matcher) lists every metric against its budget. Each test's metrics are an
+  annotation (`web vitals`) and an attachment in the report.
+- **Chromium only**: Firefox reports LCP, but neither layout shifts nor interactions (checked 2026-11-11).
+- **Only when asked**: the `performance` project exists when `PERFORMANCE=true`, and the browser projects leave
+  `@perf` out. `npm run test:perf` runs it alone with one worker. In CI, the `performance` job runs it nightly and
+  on manual runs, alone, so other tests don't skew the timings; its blob report is merged with the e2e shards',
+  so the published report has the metrics. `CI passed` needs it on those runs. Burn-in sets `PERFORMANCE=true`, so
+  a changed performance spec is burned in too.
+- **Cloudflare's analytics beacon** loads after the page and isn't an LCP or layout candidate; no budget counts
+  requests or bytes, so it needs no exception.

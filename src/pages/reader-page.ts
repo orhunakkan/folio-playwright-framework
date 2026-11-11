@@ -14,6 +14,8 @@ export class ReaderPage {
   readonly bookmarkButton: Locator;
   /** The chapter's text. */
   readonly text: Locator;
+  /** Turns to the next page of the book. */
+  readonly nextPageButton: Locator;
   /**
    * In the toolbar that appears over selected text. The same toolbar has Ask about this, Explain and Translate,
    * which call third-party services: tests never press them (see AGENTS.md).
@@ -25,6 +27,7 @@ export class ReaderPage {
     this.panel = new BookPanel(page);
     this.bookmarkButton = page.getByRole('button', { name: 'Bookmark this page' });
     this.text = page.getByRole('article');
+    this.nextPageButton = page.getByRole('button', { name: 'Next page' });
     this.noteButton = page.getByRole('button', { name: 'Note', exact: true });
   }
 
@@ -42,6 +45,10 @@ export class ReaderPage {
         box: true,
       },
     );
+  }
+
+  async turnPage(): Promise<void> {
+    await test.step('turn to the next page', () => this.nextPageButton.click(), { box: true });
   }
 
   /**

@@ -4,6 +4,8 @@ import { test, type Locator, type Page } from '@playwright/test';
 export class LibraryPage {
   readonly page: Page;
   readonly heading: Locator;
+  /** The filter buttons above the shelves, e.g. `All` and `Classic novels`. Pressed when active. */
+  readonly filters: Locator;
   /** One region per series on the shelves, named after the series, e.g. `Jane Austen`. */
   readonly series: Locator;
   /**
@@ -18,6 +20,7 @@ export class LibraryPage {
     const navigation = page.getByRole('complementary', { name: 'Site navigation' });
     this.heading = main.getByRole('heading', { level: 1 });
     this.series = main.getByRole('region');
+    this.filters = main.getByRole('group', { name: 'Filter books' }).getByRole('button');
     this.changingParts = [
       main.getByRole('complementary', { name: 'Library stats' }),
       main.getByRole('group', { name: 'Filter books' }),
@@ -27,7 +30,15 @@ export class LibraryPage {
     ];
   }
 
+  filter(name: string): Locator {
+    return this.filters.filter({ hasText: name });
+  }
+
   async open(): Promise<void> {
     await test.step('open the library', () => this.page.goto('/library'), { box: true });
+  }
+
+  async filterBy(name: string): Promise<void> {
+    await test.step(`filter the library by ${name}`, () => this.filter(name).click(), { box: true });
   }
 }

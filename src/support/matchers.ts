@@ -9,6 +9,7 @@ import type {
 } from '@playwright/test';
 import { z } from 'zod';
 import { schemaIssues } from '../api/folio-api.ts';
+import { BUDGETS, type WebVitals } from '../checks/web-vitals.ts';
 
 /**
  * Domain matchers, added to `expect` in src/fixtures/test.ts. Each failure message says what Folio did in a user's
@@ -97,6 +98,34 @@ export const matchers = {
         (result.success
           ? `${requestName(received)}'s body matches the schema`
           : `${requestName(received)}'s body doesn't match the schema:\n${schemaIssues(result.error)}`),
+    };
+  },
+
+  /**
+   * Web vitals within their budgets (`BUDGETS` in src/checks/web-vitals.ts): `expect(vitals).toBeWithinBudgets()`.
+   * The failure lists every metric against its budget.
+   */
+  toBeWithinBudgets(this: ExpectMatcherState, received: WebVitals): MatcherReturnType {
+    const lines = [
+      {
+        name: 'LCP',
+        value: received.lcp,
+        budget: BUDGETS.lcp,
+        unit: ' ms',
+        text: `${String(Math.round(received.lcp))} ms`,
+      },
+      { name: 'CLS', value: received.cls, budget: BUDGETS.cls, unit: '', text: received.cls.toFixed(3) },
+      { name: 'INP', value: received.inp, budget: BUDGETS.inp, unit: ' ms', text: `${String(received.inp)} ms` },
+    ].map(({ name, value, budget, unit, text }) => ({
+      over: !(value <= budget),
+      text: `${name} ${text}, ${value <= budget ? 'within' : 'over'} its budget of ${String(budget)}${unit}`,
+    }));
+    return {
+      name: 'toBeWithinBudgets',
+      pass: lines.every(({ over }) => !over),
+      message: () =>
+        `${this.utils.matcherHint('toBeWithinBudgets', undefined, '', { isNot: this.isNot })}\n\n` +
+        lines.map(({ over, text }) => `${over ? '✗' : '✓'} ${text}`).join('\n'),
     };
   },
 };

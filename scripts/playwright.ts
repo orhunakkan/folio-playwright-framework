@@ -9,7 +9,7 @@ import { IMAGE } from '../src/config/image.ts';
 const PLAYWRIGHT = 'node_modules/.bin/playwright';
 // Passed by name only, so no value appears in a command line. Locally the secrets aren't in the environment at
 // all: the run reads them from .env, which is in the mounted checkout.
-const PASSED_ENV = ['DEV_BASIC_USER', 'DEV_BASIC_PASS', 'FOLIO_TEST_API_TOKEN', 'CI', 'FAKER_SEED'];
+const PASSED_ENV = ['DEV_BASIC_USER', 'DEV_BASIC_PASS', 'FOLIO_TEST_API_TOKEN', 'CI', 'FAKER_SEED', 'PERFORMANCE'];
 // UI mode is served from the container to the host's browser, on this port of localhost only.
 const UI_PORT = '9324';
 

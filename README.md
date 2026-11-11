@@ -68,6 +68,7 @@ run behaves and looks the same on macOS, on any Linux distribution, and in CI. Y
 | `npm test -- --project=phone` | One project only |
 | `npm test -- tests/bookmarks.spec.ts --repeat-each=5` | One spec, five times over, to show it isn't flaky |
 | `npm test -- --grep @visual --update-snapshots` | Remakes the visual baselines, after a deliberate design change |
+| `npm run test:perf` | The web-vitals budgets (`@perf`), alone, in Chromium; CI runs them nightly |
 | `npm run test:ui` | UI mode, at <http://localhost:9324> |
 | `npx playwright show-report` | Opens the last run's HTML report |
 | `node scripts/scan-secrets.ts <folder>` | Fails if a secret value is in the folder's files, even inside zips |
@@ -100,8 +101,11 @@ Some of the choices behind it:
 - **One environment for every run:** the pinned Playwright image, locally and in CI.
 - **Desktop, phone and tablet projects.** Page objects handle the layouts, e.g. the reader's side panel, which
   narrow screens open as a dialog.
+- **Web-vitals budgets** (`@perf`): LCP, CLS and INP of the home page, library and reader, measured in the browser
+  around a real interaction, against Google's "good" thresholds. They run nightly, alone, and each test's metrics
+  are in the published report.
 - **Domain matchers** read like the app: `await expect(page).toBeSignedIn({ as: user })`,
-  `expect(saved).toHaveStatus(201)`, `await expect(response).toMatchSchema(Schema)`, each with a failure message in
+  `expect(saved).toHaveStatus(201)`, `await expect(response).toMatchSchema(Schema)`, `expect(vitals).toBeWithinBudgets()`, each with a failure message in
   Folio's terms.
 - **Mocking only where the real app can't oblige**, and only through `src/mocking/` (ESLint enforces it): today, a
   slowed response that pins a Folio bug.

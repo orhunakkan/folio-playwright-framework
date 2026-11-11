@@ -21,6 +21,8 @@ const EnvSchema = z.object({
   DEV_BASIC_PASS: z.string().min(1),
   FOLIO_TEST_API_TOKEN: z.string().min(1),
   CI: z.stringbool().default(false),
+  // Adds the `performance` project (web-vitals budgets, `@perf`): nightly in CI, or `npm run test:perf`.
+  PERFORMANCE: z.stringbool().default(false),
   // Optional: repeats a run's Faker data. Each test's seed is noted in the report.
   FAKER_SEED: z.coerce.number().int().nonnegative().optional(),
 });

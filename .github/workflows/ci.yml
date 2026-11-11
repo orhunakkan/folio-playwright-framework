@@ -71,6 +71,36 @@ jobs:
           path: blob-report/
           retention-days: 1
 
+  # Web-vitals budgets (`@perf`), nightly and on manual runs. Alone, with one worker, so other tests don't skew the
+  # timings. Its blob report is merged with the e2e shards', so the published report has the metrics.
+  performance:
+    name: Web-vitals budgets (nightly)
+    needs: check
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      options: --user 1001
+    env:
+      DEV_BASIC_USER: ${{ secrets.DEV_BASIC_USER }}
+      DEV_BASIC_PASS: ${{ secrets.DEV_BASIC_PASS }}
+      FOLIO_TEST_API_TOKEN: ${{ secrets.FOLIO_TEST_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: npm ci
+      - run: npm run test:perf
+      - name: Check the blob report holds no secrets
+        id: scan
+        if: ${{ !cancelled() }}
+        run: node scripts/scan-secrets.ts blob-report
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() && steps.scan.outcome == 'success' }}
+        with:
+          name: blob-report-performance
+          path: blob-report/
+          retention-days: 1
+
   # Burn-in: a pull request's new or changed specs, five times over in every project, with no retries. A flaky test
   # fails here, before it reaches main. A pull request that changes no spec passes it without running anything.
   burn-in:
@@ -86,6 +116,8 @@ jobs:
       DEV_BASIC_USER: ${{ secrets.DEV_BASIC_USER }}
       DEV_BASIC_PASS: ${{ secrets.DEV_BASIC_PASS }}
       FOLIO_TEST_API_TOKEN: ${{ secrets.FOLIO_TEST_API_TOKEN }}
+      # So a changed performance spec is burned in too, in its own project.
+      PERFORMANCE: 'true'
     steps:
       # A pull request's checkout is its merge commit: its first parent is the base branch, so the diff between the
       # two is exactly what the pull request changes.
@@ -121,7 +153,7 @@ jobs:
 
   report:
     name: Merged HTML report
-    needs: e2e
+    needs: [e2e, performance]
     # Also after failed tests: a red run's report is the one worth reading.
     if: ${{ !cancelled() && needs.e2e.result != 'skipped' }}
     runs-on: ubuntu-24.04
@@ -179,7 +211,7 @@ jobs:
   # jobs of a fork's pull request would make individual jobs awkward to require.
   ci-passed:
     name: CI passed
-    needs: [check, e2e, burn-in, report]
+    needs: [check, e2e, performance, burn-in, report]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -188,15 +220,18 @@ jobs:
           EVENT: ${{ github.event_name }}
           CHECK: ${{ needs.check.result }}
           E2E: ${{ needs.e2e.result }}
+          PERFORMANCE: ${{ needs.performance.result }}
           BURN_IN: ${{ needs.burn-in.result }}
           REPORT: ${{ needs.report.result }}
         run: |
-          echo "check: $CHECK, e2e: $E2E, burn-in: $BURN_IN, report: $REPORT, fork pull request: $FORK_PR"
+          echo "check: $CHECK, e2e: $E2E, performance: $PERFORMANCE, burn-in: $BURN_IN, report: $REPORT, fork pull request: $FORK_PR"
           [[ "$CHECK" == success ]] || exit 1
           if [[ "$FORK_PR" == true && "$E2E" == skipped ]]; then
             echo "A fork's pull request: a maintainer runs the e2e tests before merging."
             exit 0
           fi
           [[ "$E2E" == success && "$REPORT" == success ]] || exit 1
+          # Performance runs nightly and on manual runs only; there it must pass.
+          if [[ "$EVENT" == schedule || "$EVENT" == workflow_dispatch ]]; then [[ "$PERFORMANCE" == success ]] || exit 1; fi
           # Burn-in runs on pull requests only; there it must pass.
           [[ "$EVENT" != pull_request || "$BURN_IN" == success ]]

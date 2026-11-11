@@ -34,4 +34,14 @@ test.describe('Custom matchers', { tag: ['@regression', '@api'] }, () => {
       "/manifest.webmanifest's body doesn't match the schema:\n  ok: Invalid input",
     );
   });
+
+  test('toBeWithinBudgets lists every metric against its budget', () => {
+    expect(() => {
+      expect({ lcp: 3_648, cls: 0.004, inp: 0 }).toBeWithinBudgets();
+    }).toThrow(
+      '✗ LCP 3648 ms, over its budget of 2500 ms\n' +
+        '✓ CLS 0.004, within its budget of 0.1\n' +
+        '✓ INP 0 ms, within its budget of 200 ms',
+    );
+  });
 });

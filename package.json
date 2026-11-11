@@ -11,6 +11,7 @@
     "setup": "npm ci && husky && node scripts/playwright.ts --version",
     "test": "node scripts/playwright.ts test",
     "test:ui": "node scripts/playwright.ts test --ui",
+    "test:perf": "PERFORMANCE=true node scripts/playwright.ts test --project=performance --workers=1",
     "lint": "eslint .",
     "typecheck": "tsc",
     "format": "prettier --write .",

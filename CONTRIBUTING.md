@@ -32,7 +32,7 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every 
 - **Assert what the user sees, and the save.** Folio updates the UI before a save finishes, so a method that saves
   returns the save's `Response` and the spec asserts it: `expect(saved).toHaveStatus(201)`.
 - **Use the domain matchers** from `src/fixtures/test.ts`: `toBeSignedIn({ as })` (on a page, context or request
-  context), `toHaveStatus(code)` and `toMatchSchema(Schema)`. A new one goes in `src/support/matchers.ts`, with a
+  context), `toHaveStatus(code)`, `toMatchSchema(Schema)` and `toBeWithinBudgets()`. A new one goes in `src/support/matchers.ts`, with a
   failure message in Folio's terms that never prints a response body, and a check of that message in
   `tests/matchers.spec.ts`.
 - **Prove a list has loaded before asserting what it lacks**, by checking an item that must be there.
@@ -46,6 +46,9 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every 
   `npx playwright test`, whose browsers and fonts differ. Remake them only for a deliberate design change, look at
   every changed image before committing it, and mask anything that changes without a design change (the page
   object's `changingParts`). CI never writes a baseline; a missing one fails there.
+- **Performance tests are `@perf`** and run only in the `performance` project (`npm run test:perf`; nightly in
+  CI). Measure with the `webVitals` fixture: open the page, `start()`, do one real interaction, then
+  `expect(await webVitals.read()).toBeWithinBudgets()`. Budgets are in `src/checks/web-vitals.ts`.
 - **Skip only with a condition and a reason**: `test.skip(condition, 'why')`. ESLint rejects a bare `test.skip`.
 
 Explore the real dev site before writing a selector or an assertion. Don't guess text or behaviour.

@@ -3,6 +3,7 @@ import { FolioApi } from '../api/folio-api.ts';
 import { TestApi, type CreateUserOptions, type TestUser } from '../api/test-api.ts';
 import { scanAccessibility, type AccessibilityViolation } from '../checks/accessibility.ts';
 import { watchConsoleErrors } from '../checks/console-errors.ts';
+import { readWebVitals, startWebVitals, type WebVitals } from '../checks/web-vitals.ts';
 import { FAKER_SEED } from '../config/run.ts';
 import { TestData, testSeed } from '../data/test-data.ts';
 import { HighlightsPage } from '../pages/highlights-page.ts';
@@ -16,7 +17,7 @@ import { forgetUser, recordUser } from '../support/run-ledger.ts';
 
 /**
  * Playwright's `expect`, with the framework's domain matchers (src/support/matchers.ts): `toBeSignedIn()`,
- * `toHaveStatus()` and `toMatchSchema()`.
+ * `toHaveStatus()`, `toMatchSchema()` and `toBeWithinBudgets()`.
  */
 export const expect = baseExpect.extend(matchers);
 
@@ -48,6 +49,11 @@ interface Fixtures {
 
   /** Scans the page as it is now (WCAG 2.2 AA). Assert `expect(await scanAccessibility()).toEqual([])`. */
   scanAccessibility: () => Promise<AccessibilityViolation[]>;
+  /**
+   * Web vitals of the page on screen (Chromium only): `start()` once it has loaded, interact, then `read()`, which
+   * records them on the test. Assert `expect(vitals).toBeWithinBudgets()`.
+   */
+  webVitals: { start: () => Promise<void>; read: () => Promise<WebVitals> };
   /** Pixels the page is wider than the viewport. Assert `await expect.poll(horizontalOverflow).toBe(0)`. */
   horizontalOverflow: () => Promise<number>;
 }
@@ -128,6 +134,10 @@ export const test = base.extend<Fixtures>({
 
   scanAccessibility: async ({ page }, use, testInfo) => {
     await use(() => scanAccessibility(page, testInfo));
+  },
+
+  webVitals: async ({ page }, use, testInfo) => {
+    await use({ start: () => startWebVitals(page), read: () => readWebVitals(page, testInfo) });
   },
 
   horizontalOverflow: async ({ page }, use) => {

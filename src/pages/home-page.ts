@@ -19,7 +19,16 @@ export class HomePage {
     ];
   }
 
+  /** A question in the Questions section, which opens to show its answer. */
+  question(text: string): Locator {
+    return this.page.getByRole('main').getByRole('group').filter({ hasText: text });
+  }
+
   async open(): Promise<void> {
     await test.step('open the home page', () => this.page.goto('/'), { box: true });
+  }
+
+  async openQuestion(text: string): Promise<void> {
+    await test.step(`open the question "${text}"`, () => this.question(text).click(), { box: true });
   }
 }
