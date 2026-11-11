@@ -25,7 +25,7 @@ third-party testing, limited mocking, public repository.
 | | Mocking | One small folder with only the five allowed cases | Follows AGENTS.md, nothing more | |
 | | Accessibility | Axe scan per journey | A11y is part of "done" | ✓ |
 | | Responsive | Desktop, phone and tablet projects; horizontal overflow check | Proves layouts hold up | ✓ |
-| | Cross-browser | Chromium, Firefox and WebKit on desktop | Wider coverage than Folio's own suite | Partly: no WebKit yet |
+| | Cross-browser | Chromium, Firefox and WebKit on desktop | Wider coverage than Folio's own suite | ✓ |
 | | Tags & skips | `@smoke`, `@regression`, `@http`; conditional skips with reasons | Targeted runs, honest skips | ✓ |
 | | Reporting in tests | `test.step()` in page objects | Reports and traces read like a story | ✓ |
 | | Guards | `forbidOnly`, plus a meta-test that checks the config | The suite can't silently rot | ✓ |
