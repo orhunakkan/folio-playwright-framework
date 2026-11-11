@@ -25,6 +25,9 @@ export default defineConfig({
       username: env.DEV_BASIC_USER,
       password: env.DEV_BASIC_PASS,
       origin: DEV_URL,
+      // Up front, not after a 401 challenge: under parallel load the retry after the challenge sometimes hung
+      // until it timed out. `origin` still limits them to dev.
+      send: 'always',
     },
     actionTimeout: 10_000,
     navigationTimeout: 15_000,
@@ -41,6 +44,9 @@ export default defineConfig({
     { name: 'setup', testMatch: /\.setup\.ts$/, teardown: 'cleanup' },
     // Deletes any test user this run created and didn't delete, e.g. after a fixture teardown timed out.
     { name: 'cleanup', testMatch: /\.teardown\.ts$/ },
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, dependencies: ['setup'] },
+    // HTTP-level checks (`@http`), such as security headers. They don't depend on the browser or the screen,
+    // so they run once, here, and the browser projects leave them out.
+    { name: 'http', grep: /@http/, dependencies: ['setup'] },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, grepInvert: /@http/, dependencies: ['setup'] },
   ],
 });

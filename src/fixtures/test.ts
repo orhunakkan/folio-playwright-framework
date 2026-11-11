@@ -7,6 +7,7 @@ import { TestData, testSeed } from '../data/test-data.ts';
 import { HighlightsPage } from '../pages/highlights-page.ts';
 import { horizontalOverflow } from '../checks/layout.ts';
 import { ReaderPage } from '../pages/reader-page.ts';
+import { redactErrors } from '../support/redact.ts';
 import { forgetUser, recordUser } from '../support/run-ledger.ts';
 
 export { expect } from '@playwright/test';
@@ -32,13 +33,29 @@ interface Fixtures {
   scanAccessibility: () => Promise<AccessibilityViolation[]>;
   /** Pixels the page is wider than the viewport. Assert `await expect.poll(horizontalOverflow).toBe(0)`. */
   horizontalOverflow: () => Promise<number>;
-
-  /** Automatic: fails the test if any page logged a console error or threw an uncaught error. */
-  noConsoleErrors: undefined;
 }
 
 /** The one module specs import `test` and `expect` from. */
 export const test = base.extend<Fixtures>({
+  // Playwright's own `context`, extended: a test fails if any of its pages logged a console error or threw an
+  // uncaught error. Every test with a page has a context, so every such test is checked; tests that only make
+  // HTTP requests (`@http`) don't start a browser for it. On the context, not the page, so popups count too.
+  context: [
+    async ({ context }, use, testInfo) => {
+      // `context.request` (also `page.request`) makes API calls, e.g. to the test API: keep its errors safe to print.
+      redactErrors(context.request);
+      const unexpectedErrors = watchConsoleErrors(context, testInfo);
+      await use(context);
+      expect(unexpectedErrors(), 'console errors or page errors').toEqual([]);
+    },
+    { scope: 'test', title: 'check for console and page errors' },
+  ],
+
+  // Playwright's own `request`, with errors that never print dev's credentials or the test API token.
+  request: async ({ request }, use) => {
+    await use(redactErrors(request));
+  },
+
   testUserOptions: [{}, { option: true }],
 
   testUser: [
@@ -83,14 +100,4 @@ export const test = base.extend<Fixtures>({
   horizontalOverflow: async ({ page }, use) => {
     await use(() => horizontalOverflow(page));
   },
-
-  noConsoleErrors: [
-    async ({ context }, use, testInfo) => {
-      // On the context, not the page, so popups and extra pages are watched too.
-      const unexpectedErrors = watchConsoleErrors(context, testInfo);
-      await use(undefined);
-      expect(unexpectedErrors(), 'console errors or page errors').toEqual([]);
-    },
-    { auto: true, title: 'check for console and page errors' },
-  ],
 });
