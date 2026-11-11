@@ -67,6 +67,9 @@ export default defineConfig({
   },
 
   projects: [
+    // For Playwright's test agents only (AGENTS=true, set by .mcp.json): runs the seed they explore from. First, so
+    // it is the agents' default project. Signed in by its own test user; no `setup` needed.
+    ...(env.AGENTS ? [{ name: 'agents', testMatch: /\.seed\.ts$/, use: { ...devices['Desktop Chrome'] } }] : []),
     // Runs first: clears test users that earlier runs left behind. Its teardown, `cleanup`, runs last.
     { name: 'setup', testMatch: /\.setup\.ts$/, teardown: 'cleanup' },
     // Deletes any test user this run created and didn't delete, e.g. after a fixture teardown timed out.

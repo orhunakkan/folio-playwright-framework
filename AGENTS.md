@@ -59,3 +59,10 @@ app cannot produce the situation on demand. No other mocking is allowed.
 | **Slow responses** | Loading spinners, Stop buttons and timeouts are too fast to see against a real server | `page.route` with a delay |
 | **Device read-aloud** | CI machines have no speech voices, so `speechSynthesis` does nothing | An init script (`page.addInitScript`) that fakes `speechSynthesis` |
 | **Time** | Read-aloud progress, timers and relative times ("5 minutes ago") | `page.clock` controls time |
+
+### Playwright's test agents follow these rules too
+
+The planner, generator and healer in `.claude/agents/` are set up for this repository: they start from a signed-in
+test user, run in the pinned image, can't read request headers or the environment, and never press third-party
+features. Plans go in `specs/`; generated tests are drafts until rewritten in the framework's style. See
+[docs/test-agents.md](docs/test-agents.md).

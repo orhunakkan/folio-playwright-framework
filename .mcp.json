@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "playwright-test": {
+      "command": "node",
+      "args": ["scripts/playwright.ts", "run-test-mcp-server", "--headless"],
+      "env": { "AGENTS": "true" }
+    }
+  }
+}

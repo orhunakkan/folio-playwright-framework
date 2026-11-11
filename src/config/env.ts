@@ -23,6 +23,8 @@ const EnvSchema = z.object({
   CI: z.stringbool().default(false),
   // Adds the `performance` project (web-vitals budgets, `@perf`): nightly in CI, or `npm run test:perf`.
   PERFORMANCE: z.stringbool().default(false),
+  // Adds the `agents` project, for Playwright's test agents (.mcp.json sets it; see docs/test-agents.md).
+  AGENTS: z.stringbool().default(false),
   // Optional: repeats a run's Faker data. Each test's seed is noted in the report.
   FAKER_SEED: z.coerce.number().int().nonnegative().optional(),
 });

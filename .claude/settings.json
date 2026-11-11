@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "deny": [
+      "mcp__playwright-test__browser_network_request",
+      "mcp__playwright-test__browser_network_requests",
+      "mcp__playwright-test__browser_get_config",
+      "mcp__playwright-test__browser_run_code_unsafe",
+      "mcp__playwright-test__browser_start_tracing",
+      "mcp__playwright-test__browser_stop_tracing",
+      "mcp__playwright-test__browser_route",
+      "mcp__playwright-test__browser_unroute",
+      "mcp__playwright-test__browser_network_state_set",
+      "mcp__playwright-test__browser_storage_state",
+      "mcp__playwright-test__browser_set_storage_state"
+    ]
+  }
+}

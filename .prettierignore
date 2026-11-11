@@ -7,3 +7,4 @@ playwright/.cache/
 
 # Markdown is hand-formatted (compact tables)
 *.md
+.playwright-mcp/

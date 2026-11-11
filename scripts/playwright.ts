@@ -9,7 +9,15 @@ import { IMAGE } from '../src/config/image.ts';
 const PLAYWRIGHT = 'node_modules/.bin/playwright';
 // Passed by name only, so no value appears in a command line. Locally the secrets aren't in the environment at
 // all: the run reads them from .env, which is in the mounted checkout.
-const PASSED_ENV = ['DEV_BASIC_USER', 'DEV_BASIC_PASS', 'FOLIO_TEST_API_TOKEN', 'CI', 'FAKER_SEED', 'PERFORMANCE'];
+const PASSED_ENV = [
+  'DEV_BASIC_USER',
+  'DEV_BASIC_PASS',
+  'FOLIO_TEST_API_TOKEN',
+  'CI',
+  'FAKER_SEED',
+  'PERFORMANCE',
+  'AGENTS',
+];
 // UI mode is served from the container to the host's browser, on this port of localhost only.
 const UI_PORT = '9324';
 
@@ -24,6 +32,8 @@ function dockerArgs(): string[] {
   const root = fileURLToPath(new URL('..', import.meta.url)).replace(/\/$/, '');
   const docker = ['run', '--rm', '--init', '--ipc=host', '--volume', `${root}:${root}`, '--workdir', root];
   if (process.stdin.isTTY && process.stdout.isTTY) docker.push('--interactive', '--tty');
+  // The test agents' MCP server talks over stdin and stdout, which are pipes, not a terminal.
+  else if (args[0] === 'run-test-mcp-server') docker.push('--interactive');
   // Files the run writes (the report, test results) belong to you, not to root. HOME must then be writable.
   if (process.getuid && process.getgid) {
     docker.push('--user', `${String(process.getuid())}:${String(process.getgid())}`, '--env', 'HOME=/tmp');

@@ -14,3 +14,6 @@ blob-reports/
 playwright/.cache/
 playwright/.auth/
 playwright/.runs/
+
+# Playwright test agents (MCP server snapshots)
+.playwright-mcp/
