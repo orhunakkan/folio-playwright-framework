@@ -140,7 +140,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 7. Console errors | Auto fixture that fails a test on console errors or page errors; first check what dev logs today (e.g. the Cloudflare beacon) | Every test fails on an unexpected console or page error, and a deliberately broken page proves it | ✓ |
 | 8. Cleanup and test data | Teardown project that deletes what the run created; Faker factories with a seed; run ID prefix on created data | A run leaves nothing behind on dev, and the data it creates is traceable to the run | ✓ |
 | 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | ✓ |
-| 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, every run in the pinned image (`npm test`); the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | ✓ locally, without WebKit; CI after the push |
+| 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, every run in the pinned image (`npm test`); the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | ✓, without WebKit (see step 10's notes) |
 | 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | ✓; the Renovate app waits for the owner |
 
 Steps 1–5 built the foundation, and steps 6–11 finish the Core tier. The mocking folder is not a step: it is built
@@ -221,15 +221,15 @@ How the framework uses it (step 3):
   (Step 11 correction: that check, and the one in step 9, searched files as plain text, which can't see into the
   HTML report's embedded zip. Both of CI's uploaded reports so far were rescanned with the zip-aware scan on
   2026-11-11, along with their run logs: clean.)
-- **Both jobs run in `mcr.microsoft.com/playwright:v1.65.0-noble`**, which has Node 26.13.0 and npm 11.20.0,
-  matching `engines`. Its tag must move with `@playwright/test`.
+- **The check, e2e and report jobs run in `mcr.microsoft.com/playwright:v1.65.0-noble`**, with Node 26.13.0 and
+  npm 11.20.0, matching `engines`. Its tag must move with `@playwright/test`.
 - **Actions are pinned by commit SHA**, with the version in a comment, as a supply-chain defence.
 - **Pull requests from forks skip the e2e job.** GitHub gives them no secrets, so the tests couldn't reach dev.
 - **`npm audit --audit-level=high` passes.** On 2026-11-11 it reported 10 moderate advisories, all one `minimatch`
   denial-of-service reached through the ESLint and typescript-eslint tooling (dev-only). The only offered fix
   downgrades ESLint, so they wait for upstream releases.
-- **Not yet:** sharding with a merged report, and the GitHub Pages report. With six tests the run takes about 15 s,
-  so they come once the suite grows.
+- **Sharding with a merged report, and the GitHub Pages report,** were left out with six tests; step 11 added them
+  (see "Decided: CI at scale").
 
 ## Decided: docs (step 6)
 
