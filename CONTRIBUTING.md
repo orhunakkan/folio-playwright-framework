@@ -32,9 +32,9 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every 
 - **Assert what the user sees, and the save.** Folio updates the UI before a save finishes, so a method that saves
   returns the save's `Response` and the spec asserts it: `expect(saved).toHaveStatus(201)`.
 - **Use the domain matchers** from `src/fixtures/test.ts`: `toBeSignedIn({ as })` (on a page, context or request
-  context), `toHaveStatus(code)`, `toMatchSchema(Schema)` and `toBeWithinBudgets()`. A new one goes in `src/support/matchers.ts`, with a
-  failure message in Folio's terms that never prints a response body, and a check of that message in
-  `tests/matchers.spec.ts`.
+  context), `toHaveStatus(code)`, `toMatchSchema(Schema)` and `toBeWithinBudgets()`. A new one goes in
+  `src/support/matchers.ts`, with a failure message in Folio's terms that never prints a response body, and a check
+  of that message in `tests/matchers.spec.ts`.
 - **Prove a list has loaded before asserting what it lacks**, by checking an item that must be there.
 - **End each journey with the accessibility and overflow checks**, once, at its richest state:
   `expect(await scanAccessibility()).toEqual([])` and `await expect.poll(horizontalOverflow).toBe(0)`. A real
@@ -52,13 +52,17 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every 
 - **Skip only with a condition and a reason**: `test.skip(condition, 'why')`. ESLint rejects a bare `test.skip`.
 
 Explore the real dev site before writing a selector or an assertion. Don't guess text or behaviour.
+Playwright's planner agent can do the exploring and write the plan ([docs/test-agents.md](docs/test-agents.md)); the
+spec is still written in the framework's style.
 
 ## Out of bounds
 
 - **Third-party features** (Ask the book, quizzes, flashcards, voices, word lookup, cover search, billing, email):
   no tests, and no stubs. Stop a journey before it reaches one.
 - **Mocking** only for the five cases in [AGENTS.md](AGENTS.md#mocking-is-limited-to-these-cases), and only through
-  helpers in `src/mocking/`: ESLint rejects `route`, `setOffline`, `addInitScript` and `clock` anywhere else.
+  helpers in `src/mocking/` (`failNextRequest`, `goOffline`, `slowDown`, `fakeDeviceSpeech`, `installClock` and
+  `letTimePass`): ESLint rejects `route`, `setOffline`, `addInitScript` and `clock` anywhere else. A fake that makes
+  the browser log an error says so on the test (`expected console error`), as narrowly as it can.
 - **Secrets** stay in `.env` and GitHub Secrets. Never commit, log or paste them, and never share a local report:
   its traces hold them. Make API calls with the `request` fixture or `context.request` from `src/fixtures/test.ts`,
   whose errors are redacted; a request context made any other way prints the credentials when a call fails.

@@ -22,7 +22,7 @@ third-party testing, limited mocking, public repository.
 | | Test data | Faker factories with a seed, plus a run ID prefix on created data | Realistic, reproducible, traceable on dev | ✓ |
 | | Cleanup | A teardown project deletes what the run created | Keeps the shared dev site clean | ✓ |
 | | Config | Typed env (zod), explicit timeouts, dev URL in one place | Fails fast and stays predictable | ✓ |
-| | Mocking | One small folder with only the five allowed cases | Follows AGENTS.md, nothing more | |
+| | Mocking | `src/mocking/`, enforced by lint: error responses (`bookmarks`), offline (`offline-reading`), slow responses (`notes`, `performance`), device read-aloud and time (`read-aloud`) | Follows AGENTS.md, nothing more | ✓ |
 | | Accessibility | Axe scan per journey | A11y is part of "done" | ✓ |
 | | Responsive | Desktop, phone and tablet projects; horizontal overflow check | Proves layouts hold up | ✓ |
 | | Cross-browser | Chromium and Firefox on desktop; WebKit when Playwright's basic-auth bug is fixed (see step 10) | Wider coverage than Folio's own suite | ✓ |
@@ -37,10 +37,10 @@ third-party testing, limited mocking, public repository.
 | **Showcase** | Visual | Screenshot tests on stable pages (home, library) with masking | Catches visual regressions | ✓ |
 | | API layer | Typed API client + zod response schemas | Shows API testing alongside UI | ✓ |
 | | Assertions | A few custom matchers (`toBeSignedIn()`) | Domain-language tests | ✓ |
-| | Performance | Web-vitals budgets, nightly | Covers more than functional testing | |
+| | Performance | Web-vitals budgets, nightly | Covers more than functional testing | ✓ |
 | | Security | Header checks (`@http`) | Cheap, meaningful checks | ✓ |
 | | Flakiness | Burn-in (`--repeat-each`) on changed specs in PRs | Stops flaky tests at the door | ✓ |
-| | AI | Playwright test agents (planner, healer) with docs | Fits an "agentic" story | |
+| | AI | Playwright test agents (planner, generator, healer) with docs | Fits an "agentic" story | ✓ |
 | **Skipped (with ADR)** | Third parties | No tests, no stubs | AGENTS.md rule | ✓ |
 | | Other mocking | No HAR replay or extra mocks | AGENTS.md rule | ✓ |
 | | Allure | HTML report only | One good reporter beats two | ✓ |
@@ -146,9 +146,9 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 13. Visual | Screenshot tests on stable pages (home, library) with dynamic parts masked; baselines made in the pinned image | They pass in every browser project, locally and in CI, and a deliberate visual change fails them | ✓ |
 | 14. API layer | A typed client with zod response schemas for Folio's own endpoints, alongside the UI tests | An `@api` spec checks real responses against the schemas | ✓ |
 | 15. Custom matchers | A few domain matchers, e.g. `toBeSignedIn()`, via `expect.extend` in `src/fixtures/test.ts` | Used in at least two specs, with readable failure messages | ✓ |
-| 16. Performance | Web-vitals budgets (LCP, CLS, INP) measured in the browser, run nightly | The nightly run records the metrics in the report and fails when one is over budget | |
-| 17. AI | Playwright's test agents (planner, generator, healer), set up as Playwright documents them, with docs on using them within AGENTS.md | The agent files are committed, the docs explain them, and one plan made with them for a real journey is in the repo | |
-| 18. More journeys + mocking | New journeys (e.g. highlights, reading settings, search, offline reading, read-aloud), building `src/mocking/` with the first test that needs one of the five allowed cases | The Mocking row holds only cases real specs use, and each case has a spec | |
+| 16. Performance | Web-vitals budgets (LCP, CLS, INP) measured in the browser, run nightly | The nightly run records the metrics in the report and fails when one is over budget | ✓ |
+| 17. AI | Playwright's test agents (planner, generator, healer), set up as Playwright documents them, with docs on using them within AGENTS.md | The agent files are committed, the docs explain them, and one plan made with them for a real journey is in the repo | ✓ |
+| 18. More journeys + mocking | New journeys (e.g. highlights, reading settings, search, offline reading, read-aloud), building `src/mocking/` with the first test that needs one of the five allowed cases | The Mocking row holds only cases real specs use, and each case has a spec | ✓ |
 
 Steps 1–5 built the foundation, and steps 6–11 finish the Core tier. Steps 12–17 build the open Showcase rows, and
 step 18 adds journeys and, with the first test that needs one of the five allowed cases, the mocking folder (the
@@ -492,7 +492,7 @@ How the framework uses it (step 3):
 - **`tests/matchers.spec.ts` proves the messages**: each matcher fails on purpose against a real answer from dev,
   and the test checks the message. It is `@api`, so it runs once.
 
-## Decided: mocking starts (during step 15)
+## Decided: mocking starts (during step 15, finished in step 18)
 
 - **A Folio bug: the note box race.** In the reader, pressing Note while the highlights are still loading saves the
   highlight but never opens its note box; the highlight offers "Add note" instead. Found 2026-11-11 when
@@ -530,3 +530,61 @@ How the framework uses it (step 3):
   a changed performance spec is burned in too.
 - **Cloudflare's analytics beacon** loads after the page and isn't an LCP or layout candidate; no budget counts
   requests or bytes, so it needs no exception.
+
+## Decided: AI (step 17)
+
+- **Playwright's planner, generator and healer** were generated with `npx playwright init-agents --loop=claude
+  --project=chromium` (1.65) as Claude Code subagents in `.claude/agents/`, with the test MCP server in `.mcp.json`,
+  then adapted; [docs/test-agents.md](test-agents.md) explains how to use them and every change. In short: the MCP
+  server runs in the pinned image, headless; the seed `tests/agents/signed-in.seed.ts` runs in an `agents` project
+  that exists only when `AGENTS=true` (set by `.mcp.json`), signed in as a fresh test user; each agent ends with
+  this repository's rules; generated tests are drafts in `specs/drafts/`, outside the suite.
+- **Secrets stay out of the model's context.** The MCP server offers tools that would show dev's basic-auth header
+  and the test API token (request details), run code in Node where the environment is (`run_code_unsafe`), print
+  the config (`get_config`), or record traces. `.claude/settings.json` denies them, and network routing, for every
+  agent and session, and they are removed from the agents' tool lists. `meta/agents.test.ts` checks the deny list,
+  the tool lists, the rules and the MCP command, so a later `init-agents` can't quietly undo them.
+- **The plan is real**: the planner explored dev on 2026-11-11 (run headless with `claude -p`, only read tools and
+  the MCP server allowed) and saved [specs/highlights.md](../specs/highlights.md), ten scenarios. It pressed only
+  Highlight. Its findings, checked before use: the reader offers one colour (yellow) and no way to change it, though
+  the API takes four; highlights are drawn with the CSS Custom Highlight API, not elements, so tests check the
+  lists; delete has no confirmation. `tests/highlights.spec.ts` was written from it, in the framework's style.
+- **The MCP server's page snapshots** (`.playwright-mcp/`) are gitignored. Its seed user is deleted when the seed
+  test ends, and the sweep catches it otherwise.
+
+## Decided: more journeys and mocking (step 18)
+
+- **Four journeys**, each run in every browser project:
+  - **Highlights** (`highlights.spec.ts`, from the planner's plan): highlight a passage, find it in the reader's
+    Highlights tab (`Yellow highlight: <passage>`) and on Account → Highlights; delete one; accessibility.
+  - **A save that fails** (in `bookmarks.spec.ts`): the bookmark save answers 500, the reader announces
+    "Couldn’t save that. Try again." and un-presses the button; pressing it again saves (201).
+  - **Offline reading** (`offline-reading.spec.ts`): download the book for offline from its page, lose the
+    connection, open chapter 2: it reads from the device.
+  - **Read aloud** (`read-aloud.spec.ts`): the device voice reads the page sentence by sentence; the player's time
+    left and progress follow the reading as the clock moves; the open player passes the accessibility scan.
+- **Every allowed mocking case is now used**, each in `src/mocking/`: `failNextRequest` (error states, once, then
+  dev answers), `goOffline` (waits for the service worker, then `context.setOffline`), `slowDown` (slow
+  responses), `fakeDeviceSpeech` (device read-aloud: one English voice, 0.4 s a word on the page's timers, and a
+  fake utterance, because Folio sets `utterance.voice` and a real utterance refuses a voice that isn't a real
+  `SpeechSynthesisVoice`), and `installClock` with `letTimePass` (time: ten seconds at a time, with a real pause
+  between for the page's promises and requests).
+- **A fake's own console errors are expected, narrowly.** Failing a request or going offline makes the browser
+  log "Failed to load resource" errors. The fake adds an `expected console error` annotation with the exact text,
+  and the console check skips only that, on that test. The report shows it.
+- **Found on dev (2026-11-11), handled as the owner decided:**
+  - **A Folio bug: a downloaded chapter opened offline throws React error #418** (hydration mismatch) in
+    Chromium. It is in `KNOWN_CONSOLE_ERRORS`, scoped with `onlyWhen` to tests that went offline (`goOffline` adds
+    a `went offline` annotation), so the same error anywhere else still fails. Delete it when dev is fixed.
+  - **In Playwright's Firefox, the offline download stays at 0%** with no error, while Chromium finishes in
+    seconds; the service worker is registered and in control in both. Unconfirmed whether Folio or the test setup
+    (dev's basic auth on service-worker requests) is the cause, so the test is skipped in Firefox with that reason.
+    Try a download in a real Firefox to rule out Folio.
+- **The Sleep timer counts listening time, not wall time**: jumping the clock 15 minutes left "Sleep · 15 min" as
+  it was. The time case therefore checks reading progress, which AGENTS.md names, rather than the timer.
+- **A framework race, fixed:** `BookPanel.open` decided which layout the reader had before it had rendered after a
+  reload, and on a phone skipped opening the panel (1 failure in 120 runs). It now waits until the panel or the
+  Contents button is on screen.
+- **Not built**: reading settings and search. A quick look at search found "austen" giving no results in the
+  Ctrl K dialog and "pride" showing 0 books on the shelf filter; unconfirmed, it is worth a look before writing
+  that journey.

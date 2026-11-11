@@ -27,7 +27,8 @@ cp .env.example .env   # then fill in the three values (see below)
 npm test
 ```
 
-`npm test` runs every spec against dev and ends with a summary such as `49 passed`, with no failures.
+`npm test` runs every spec against dev and ends with a summary such as `110 passed` and `1 skipped` (a test skipped
+with its reason), with no failures.
 `npx playwright show-report` opens the HTML report.
 
 ### Credentials
@@ -89,6 +90,7 @@ run behaves and looks the same on macOS, on any Linux distribution, and in CI. Y
 | `src/checks/` | The accessibility scan, the horizontal overflow check, and the console error check |
 | `src/config/` | The dev URL, the typed (zod) env, the run ID, and the image every run uses |
 | `scripts/` | `playwright.ts` runs Playwright in that image (`npm test` uses it); `scan-secrets.ts` checks reports |
+| `specs/` | Test plans made with Playwright's planner agent; `.claude/agents/` holds the agents |
 | `meta/` | Tests of the Playwright config itself, run with `node --test` |
 
 Some of the choices behind it:
@@ -105,10 +107,13 @@ Some of the choices behind it:
   around a real interaction, against Google's "good" thresholds. They run nightly, alone, and each test's metrics
   are in the published report.
 - **Domain matchers** read like the app: `await expect(page).toBeSignedIn({ as: user })`,
-  `expect(saved).toHaveStatus(201)`, `await expect(response).toMatchSchema(Schema)`, `expect(vitals).toBeWithinBudgets()`, each with a failure message in
-  Folio's terms.
-- **Mocking only where the real app can't oblige**, and only through `src/mocking/` (ESLint enforces it): today, a
-  slowed response that pins a Folio bug.
+  `expect(saved).toHaveStatus(201)`, `await expect(response).toMatchSchema(Schema)` and
+  `expect(vitals).toBeWithinBudgets()`, each with a failure message in Folio's terms.
+- **Mocking only where the real app can't oblige**, and only through `src/mocking/` (ESLint enforces it): a failed
+  save, going offline, a slowed response, a device voice for read-aloud, and the page clock. Nothing else is faked.
+- **Playwright's test agents** (planner, generator, healer) are set up for Claude Code, safely: they run in the
+  pinned image, start from a fresh test user, and can't see dev's credentials. See
+  [docs/test-agents.md](docs/test-agents.md); [specs/highlights.md](specs/highlights.md) is a plan they made.
 - **Role and label locators only**, enforced by ESLint, so the tests read like a user and catch accessibility gaps.
 - **Every journey ends with an axe scan** (WCAG 2.2 AA) and a check that the page doesn't scroll sideways.
 - **Every test fails on a console error or an uncaught page error**, checked by the framework's `context` fixture.
