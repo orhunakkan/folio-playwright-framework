@@ -8,8 +8,9 @@
     "npm": ">=11"
   },
   "scripts": {
-    "setup": "npm ci && husky && playwright install chromium firefox webkit",
-    "test": "playwright test",
+    "setup": "npm ci && husky && node scripts/playwright.ts --version",
+    "test": "node scripts/playwright.ts test",
+    "test:ui": "node scripts/playwright.ts test --ui",
     "lint": "eslint .",
     "typecheck": "tsc",
     "format": "prettier --write .",
