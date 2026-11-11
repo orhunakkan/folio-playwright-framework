@@ -13,10 +13,7 @@ export class HomePage {
   constructor(page: Page) {
     this.page = page;
     this.heading = page.getByRole('heading', { level: 1 });
-    this.changingParts = [
-      page.getByRole('paragraph').filter({ hasText: /^Founding members:/ }),
-      page.getByRole('contentinfo').getByRole('paragraph').filter({ hasText: /^©/ }),
-    ];
+    this.changingParts = [page.getByRole('paragraph').filter({ hasText: /^Founding members:/ }), page.getByRole('contentinfo').getByRole('paragraph').filter({ hasText: /^©/ })];
   }
 
   /** A question in the Questions section, which opens to show its answer. */

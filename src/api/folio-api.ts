@@ -80,9 +80,7 @@ export class FolioApi {
   /** A write with any JSON body and headers, for checking how Folio answers a bad request. */
   post(path: string, data: unknown, options: { sameOrigin?: boolean } = {}): Promise<APIResponse> {
     const { sameOrigin = true } = options;
-    return this.#step(`POST ${path}`, () =>
-      this.#request.post(path, { data, maxRedirects: 0, ...(sameOrigin && { headers: { Origin: DEV_URL } }) }),
-    );
+    return this.#step(`POST ${path}`, () => this.#request.post(path, { data, maxRedirects: 0, ...(sameOrigin && { headers: { Origin: DEV_URL } }) }));
   }
 
   #write(path: string, data: unknown): Promise<APIResponse> {
@@ -98,15 +96,10 @@ export class FolioApi {
  * Reads a response's JSON body through a schema, and returns it typed. If the body doesn't match, the error lists
  * where and how, but never the body's values: some responses (the account export) hold IP addresses.
  */
-export async function readJson<Schema extends z.ZodType>(
-  response: APIResponse,
-  schema: Schema,
-): Promise<z.infer<Schema>> {
+export async function readJson<Schema extends z.ZodType>(response: APIResponse, schema: Schema): Promise<z.infer<Schema>> {
   const result = schema.safeParse(await response.json());
   if (result.success) return result.data;
-  throw new Error(
-    `${response.url()} (${String(response.status())}) doesn't match the schema:\n${schemaIssues(result.error)}`,
-  );
+  throw new Error(`${response.url()} (${String(response.status())}) doesn't match the schema:\n${schemaIssues(result.error)}`);
 }
 
 /** A schema mismatch as one line per issue, `  <path>: <message>`. Zod's messages name types, not values. */

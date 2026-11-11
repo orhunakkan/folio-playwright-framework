@@ -11,8 +11,7 @@ const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 const KNOWN_ISSUES: { exclude: string; reason: string }[] = [
   {
     exclude: '[aria-label="Pages in this chapter"] a',
-    reason:
-      "Folio bug: the reader's page dots are 18×6 px and 6×6 px links, under the 24 px minimum (WCAG 2.2 AA 2.5.8, axe rule target-size).",
+    reason: "Folio bug: the reader's page dots are 18×6 px and 6×6 px links, under the 24 px minimum (WCAG 2.2 AA 2.5.8, axe rule target-size).",
   },
 ];
 

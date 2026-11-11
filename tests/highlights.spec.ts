@@ -2,16 +2,11 @@ import { expect, test } from '../src/fixtures/test.ts';
 
 // Written from specs/highlights.md, the plan Playwright's planner agent made (docs/test-agents.md).
 const BOOK = 'pride-and-prejudice';
-const FIRST =
-  'It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.';
+const FIRST = 'It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.';
 const SECOND = 'Mr. Bennet replied that he had not.';
 
 test.describe('Highlights', { tag: '@regression' }, () => {
-  test('highlight a passage and find it in the reader and in your account', async ({
-    readerPage,
-    highlightsPage,
-    testUser: _signedIn,
-  }) => {
+  test('highlight a passage and find it in the reader and in your account', async ({ readerPage, highlightsPage, testUser: _signedIn }) => {
     await readerPage.open(BOOK, 1);
 
     const saved = await readerPage.highlight(FIRST);
@@ -50,12 +45,7 @@ test.describe('Highlights', { tag: '@regression' }, () => {
     await expect(readerPage.panel.highlight(SECOND)).toBeVisible();
   });
 
-  test('the reader with a highlight is accessible and fits the screen', async ({
-    readerPage,
-    scanAccessibility,
-    horizontalOverflow,
-    testUser: _signedIn,
-  }) => {
+  test('the reader with a highlight is accessible and fits the screen', async ({ readerPage, scanAccessibility, horizontalOverflow, testUser: _signedIn }) => {
     await readerPage.open(BOOK, 1);
     await readerPage.highlight(FIRST);
     await readerPage.panel.showHighlights();

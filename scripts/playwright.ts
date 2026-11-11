@@ -9,15 +9,7 @@ import { IMAGE } from '../src/config/image.ts';
 const PLAYWRIGHT = 'node_modules/.bin/playwright';
 // Passed by name only, so no value appears in a command line. Locally the secrets aren't in the environment at
 // all: the run reads them from .env, which is in the mounted checkout.
-const PASSED_ENV = [
-  'DEV_BASIC_USER',
-  'DEV_BASIC_PASS',
-  'FOLIO_TEST_API_TOKEN',
-  'CI',
-  'FAKER_SEED',
-  'PERFORMANCE',
-  'AGENTS',
-];
+const PASSED_ENV = ['DEV_BASIC_USER', 'DEV_BASIC_PASS', 'FOLIO_TEST_API_TOKEN', 'CI', 'FAKER_SEED', 'PERFORMANCE', 'AGENTS'];
 // UI mode is served from the container to the host's browser, on this port of localhost only.
 const UI_PORT = '9324';
 
@@ -55,11 +47,7 @@ function run(command: string, commandArgs: string[]): Promise<number> {
   return new Promise((resolve) => {
     const child = spawn(command, commandArgs, { stdio: 'inherit' });
     child.on('error', (error: NodeJS.ErrnoException) => {
-      console.error(
-        error.code === 'ENOENT' && command === 'docker'
-          ? 'Docker is not installed or not on PATH. Tests run in the pinned Playwright image: see README.md.'
-          : error.message,
-      );
+      console.error(error.code === 'ENOENT' && command === 'docker' ? 'Docker is not installed or not on PATH. Tests run in the pinned Playwright image: see README.md.' : error.message);
       resolve(1);
     });
     child.on('exit', (code, signal) => {

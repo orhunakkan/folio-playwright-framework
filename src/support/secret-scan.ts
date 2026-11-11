@@ -7,10 +7,7 @@ import { inflateRawSync } from 'node:zlib';
  * in zips: blob reports are zips, and the HTML report embeds its data as a base64 zip in index.html. So this reads
  * inside zips, at any depth, as well as plain files. It returns where each secret was found, never the value.
  */
-export function findSecrets(
-  paths: string[],
-  secrets: { name: string; value: string }[],
-): { name: string; file: string }[] {
+export function findSecrets(paths: string[], secrets: { name: string; value: string }[]): { name: string; file: string }[] {
   const found: { name: string; file: string }[] = [];
   const needles = secrets.map(({ name, value }) => ({ name, value: Buffer.from(value) }));
 
@@ -63,8 +60,7 @@ function zipEntries(zip: Buffer): { name: string; content: Buffer }[] {
     const commentLength = zip.readUInt16LE(offset + 32);
     const localHeader = zip.readUInt32LE(offset + 42);
     const name = zip.toString('utf8', offset + 46, offset + 46 + nameLength);
-    if (compressedSize === 0xffffffff || localHeader === 0xffffffff)
-      throw new Error(`ZIP64 entry not supported: ${name}`);
+    if (compressedSize === 0xffffffff || localHeader === 0xffffffff) throw new Error(`ZIP64 entry not supported: ${name}`);
 
     const dataStart = localHeader + 30 + zip.readUInt16LE(localHeader + 26) + zip.readUInt16LE(localHeader + 28);
     const data = zip.subarray(dataStart, dataStart + compressedSize);

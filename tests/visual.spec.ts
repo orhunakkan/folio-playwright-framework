@@ -20,10 +20,7 @@ test.describe('Visual', { tag: ['@regression', '@visual'] }, () => {
   });
 
   test('a change to the design fails the visual check', async ({ homePage }, testInfo) => {
-    test.skip(
-      ['all', 'changed'].includes(testInfo.config.updateSnapshots),
-      'Updating baselines would save this deliberately wrong screenshot as the home page baseline',
-    );
+    test.skip(['all', 'changed'].includes(testInfo.config.updateSnapshots), 'Updating baselines would save this deliberately wrong screenshot as the home page baseline');
     test.fail(true, 'The heading is recoloured on purpose, so the screenshot must not match the baseline');
     await homePage.open();
     await homePage.page.addStyleTag({ content: 'h1 { color: rgb(255, 0, 0) !important; }' });

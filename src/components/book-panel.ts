@@ -28,9 +28,7 @@ export class BookPanel {
 
   constructor(page: Page) {
     this.page = page;
-    this.root = page
-      .getByRole('complementary', { name: 'Book contents panel' })
-      .or(page.getByRole('dialog', { name: 'Contents' }));
+    this.root = page.getByRole('complementary', { name: 'Book contents panel' }).or(page.getByRole('dialog', { name: 'Contents' }));
     this.openButton = page.getByRole('button', { name: 'Contents', exact: true });
     this.bookmarksTab = this.root.getByRole('tab', { name: 'Bookmarks' });
     this.bookmarks = this.root.getByRole('tabpanel', { name: 'Bookmarks' }).getByRole('listitem');
@@ -65,11 +63,7 @@ export class BookPanel {
    */
   async open(): Promise<void> {
     // Wait for the reader to show one layout or the other: right after a reload, neither may be on screen yet.
-    await this.page
-      .getByRole('complementary', { name: 'Book contents panel' })
-      .or(this.openButton)
-      .filter({ visible: true })
-      .waitFor();
+    await this.page.getByRole('complementary', { name: 'Book contents panel' }).or(this.openButton).filter({ visible: true }).waitFor();
     if (!(await this.openButton.isVisible())) return;
     if ((await this.openButton.getAttribute('aria-expanded')) === 'true') return;
 

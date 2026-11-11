@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, type LaunchOptions } from '@playwright/test';
 import { DEV_URL, env } from './src/config/env.ts';
 import { RUN_ID } from './src/config/run.ts';
 
@@ -7,9 +7,18 @@ import { RUN_ID } from './src/config/run.ts';
  * behind the Contents button. No WebKit for now: in Playwright 1.65 it never answers dev's basic-auth challenge
  * while `httpCredentials.origin` is set, and that guard stays (see the blueprint's "Decided: devices and browsers").
  */
-const BROWSER_PROJECTS: { name: string; device: keyof typeof devices }[] = [
+const BROWSER_PROJECTS: { name: string; device: keyof typeof devices; launchOptions?: LaunchOptions }[] = [
   { name: 'chromium', device: 'Desktop Chrome' },
-  { name: 'firefox', device: 'Desktop Firefox' },
+  {
+    name: 'firefox',
+    device: 'Desktop Firefox',
+    // Firefox asks the user before `navigator.storage.persist()` answers, and the promise waits for that prompt;
+    // Chromium decides on its own. Folio asks when a book is downloaded for offline, so without an answer the
+    // download stays at 0%. These prefs (Firefox's own, for testing) answer Allow, as a reader would.
+    launchOptions: {
+      firefoxUserPrefs: { 'dom.storageManager.prompt.testing': true, 'dom.storageManager.prompt.testing.allow': true },
+    },
+  },
   { name: 'phone', device: 'Pixel 7' },
   { name: 'tablet', device: 'Galaxy Tab S9' },
 ];
@@ -79,12 +88,10 @@ export default defineConfig({
     { name: 'http', grep: HTTP_TAGS, dependencies: ['setup'] },
     // Web-vitals budgets (`@perf`). Only Chromium reports layout shifts and interactions. Only when asked
     // (PERFORMANCE=true), so everyday runs stay fast: nightly in CI, alone, so other tests don't skew the timings.
-    ...(env.PERFORMANCE
-      ? [{ name: 'performance', grep: PERFORMANCE_TAG, use: { ...devices['Desktop Chrome'] }, dependencies: ['setup'] }]
-      : []),
-    ...BROWSER_PROJECTS.map(({ name, device }) => ({
+    ...(env.PERFORMANCE ? [{ name: 'performance', grep: PERFORMANCE_TAG, use: { ...devices['Desktop Chrome'] }, dependencies: ['setup'] }] : []),
+    ...BROWSER_PROJECTS.map(({ name, device, launchOptions }) => ({
       name,
-      use: { ...devices[device] },
+      use: { ...devices[device], ...(launchOptions && { launchOptions }) },
       grepInvert: [HTTP_TAGS, PERFORMANCE_TAG],
       dependencies: ['setup'],
     })),

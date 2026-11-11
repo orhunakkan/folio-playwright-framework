@@ -15,8 +15,7 @@ const KNOWN_CONSOLE_ERRORS: { pattern: RegExp; onlyWhen?: string; reason: string
   {
     pattern: /^page error: Minified React error #418;/,
     onlyWhen: WENT_OFFLINE,
-    reason:
-      'Folio bug: a downloaded chapter opened offline throws React error #418 (hydration mismatch) in Chromium (found 2026-11-11).',
+    reason: 'Folio bug: a downloaded chapter opened offline throws React error #418 (hydration mismatch) in Chromium (found 2026-11-11).',
   },
 ];
 
@@ -38,10 +37,7 @@ export function watchConsoleErrors(context: BrowserContext, testInfo: TestInfo):
 
   return () =>
     errors.filter((error) => {
-      const known = KNOWN_CONSOLE_ERRORS.find(
-        ({ pattern, onlyWhen }) =>
-          pattern.test(error) && (onlyWhen === undefined || testInfo.annotations.some(({ type }) => type === onlyWhen)),
-      );
+      const known = KNOWN_CONSOLE_ERRORS.find(({ pattern, onlyWhen }) => pattern.test(error) && (onlyWhen === undefined || testInfo.annotations.some(({ type }) => type === onlyWhen)));
       if (known) testInfo.annotations.push({ type: 'known console error', description: known.reason });
       return !known && !expectedByTheTest(error, testInfo);
     });
@@ -55,8 +51,5 @@ export const EXPECTED_CONSOLE_ERROR = 'expected console error';
  * Only src/mocking/ adds them, each as narrow as the fake, and the report shows them on the test.
  */
 function expectedByTheTest(error: string, testInfo: TestInfo): boolean {
-  return testInfo.annotations.some(
-    ({ type, description }) =>
-      type === EXPECTED_CONSOLE_ERROR && description !== undefined && error.includes(description),
-  );
+  return testInfo.annotations.some(({ type, description }) => type === EXPECTED_CONSOLE_ERROR && description !== undefined && error.includes(description));
 }

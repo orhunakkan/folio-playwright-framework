@@ -7,11 +7,7 @@ import { EXPECTED_CONSOLE_ERROR } from '../checks/console-errors.ts';
  * The browser logs the failed load as a console error; it is expected for this test, and noted on it.
  */
 export async function failNextRequest(page: Page, url: string | RegExp, status: 500 | 502 | 503): Promise<void> {
-  await test.step(
-    `fail the next request to ${String(url)} with ${String(status)}`,
-    () => page.route(url, (route) => route.fulfill({ status, body: 'Failed on purpose by the test' }), { times: 1 }),
-    { box: true },
-  );
+  await test.step(`fail the next request to ${String(url)} with ${String(status)}`, () => page.route(url, (route) => route.fulfill({ status, body: 'Failed on purpose by the test' }), { times: 1 }), { box: true });
 
   test.info().annotations.push({
     type: EXPECTED_CONSOLE_ERROR,

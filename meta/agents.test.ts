@@ -24,9 +24,7 @@ const DENIED = [
 ];
 
 test('the MCP server runs in the pinned image, headless, with the agents project', () => {
-  const server = (JSON.parse(read('.mcp.json')) as { mcpServers: Record<string, unknown> }).mcpServers[
-    'playwright-test'
-  ];
+  const server = (JSON.parse(read('.mcp.json')) as { mcpServers: Record<string, unknown> }).mcpServers['playwright-test'];
   assert.deepEqual(server, {
     command: 'node',
     args: ['scripts/playwright.ts', 'run-test-mcp-server', '--headless'],

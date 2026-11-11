@@ -16,32 +16,20 @@ test.describe('Custom matchers', { tag: ['@regression', '@api'] }, () => {
   });
 
   test('toBeSignedIn says who, if anyone, is signed in', async ({ request, context, testUser }) => {
-    await expect(expect(request).toBeSignedIn({ timeout: 1_000 })).rejects.toThrow(
-      'Expected: signed in\nReceived: signed out',
-    );
-    await expect(expect(context).toBeSignedIn({ as: 'e2e-000000000000', timeout: 1_000 })).rejects.toThrow(
-      `Expected: signed in as e2e-000000000000\nReceived: signed in as ${testUser.username}`,
-    );
-    await expect(expect(context).not.toBeSignedIn({ timeout: 1_000 })).rejects.toThrow(
-      `Expected: not signed in\nReceived: signed in as ${testUser.username}`,
-    );
+    await expect(expect(request).toBeSignedIn({ timeout: 1_000 })).rejects.toThrow('Expected: signed in\nReceived: signed out');
+    await expect(expect(context).toBeSignedIn({ as: 'e2e-000000000000', timeout: 1_000 })).rejects.toThrow(`Expected: signed in as e2e-000000000000\nReceived: signed in as ${testUser.username}`);
+    await expect(expect(context).not.toBeSignedIn({ timeout: 1_000 })).rejects.toThrow(`Expected: not signed in\nReceived: signed in as ${testUser.username}`);
   });
 
   test('toMatchSchema lists where the body breaks the schema', async ({ visitorApi }) => {
     const manifest = await visitorApi.manifest();
 
-    await expect(expect(manifest).toMatchSchema(OkSchema)).rejects.toThrow(
-      "/manifest.webmanifest's body doesn't match the schema:\n  ok: Invalid input",
-    );
+    await expect(expect(manifest).toMatchSchema(OkSchema)).rejects.toThrow("/manifest.webmanifest's body doesn't match the schema:\n  ok: Invalid input");
   });
 
   test('toBeWithinBudgets lists every metric against its budget', () => {
     expect(() => {
       expect({ lcp: 3_648, cls: 0.004, inp: 0 }).toBeWithinBudgets();
-    }).toThrow(
-      '✗ LCP 3648 ms, over its budget of 2500 ms\n' +
-        '✓ CLS 0.004, within its budget of 0.1\n' +
-        '✓ INP 0 ms, within its budget of 200 ms',
-    );
+    }).toThrow('✗ LCP 3648 ms, over its budget of 2500 ms\n' + '✓ CLS 0.004, within its budget of 0.1\n' + '✓ INP 0 ms, within its budget of 200 ms');
   });
 });

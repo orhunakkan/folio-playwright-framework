@@ -83,8 +83,6 @@ export class TestApi {
 function expectStatus(response: APIResponse, expected: number[], action: string): void {
   if (!expected.includes(response.status())) {
     // Status only: the request carried secrets, so don't echo its headers.
-    throw new Error(
-      `Test API could not ${action}: got ${String(response.status())}, expected ${expected.join(' or ')}.`,
-    );
+    throw new Error(`Test API could not ${action}: got ${String(response.status())}, expected ${expected.join(' or ')}.`);
   }
 }

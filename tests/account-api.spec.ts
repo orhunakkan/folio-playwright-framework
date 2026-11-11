@@ -1,18 +1,9 @@
 import { readJson } from '../src/api/folio-api.ts';
-import {
-  AccountExportSchema,
-  BookmarkCreatedSchema,
-  ErrorSchema,
-  HighlightSavedSchema,
-  ManifestSchema,
-  OkSchema,
-  SyncedSchema,
-} from '../src/api/schemas.ts';
+import { AccountExportSchema, BookmarkCreatedSchema, ErrorSchema, HighlightSavedSchema, ManifestSchema, OkSchema, SyncedSchema } from '../src/api/schemas.ts';
 import { expect, test } from '../src/fixtures/test.ts';
 
 const BOOK = 'pride-and-prejudice';
-const FIRST_SENTENCE =
-  'It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.';
+const FIRST_SENTENCE = 'It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.';
 
 // Folio's own JSON endpoints, the ones the reader calls, checked against their schemas (src/api/schemas.ts).
 // Never attach or print an account export: it holds IP addresses.
@@ -36,9 +27,7 @@ test.describe('Account API', { tag: ['@regression', '@api'] }, () => {
     expect(bookmark.place).toMatchObject({ chapter: 'chapter-1', page: 1, label: 'Ch. 1 · p. 1' });
 
     const exported = await readJson(await folioApi.exportAccount(), AccountExportSchema);
-    expect(exported.bookmarks).toEqual([
-      expect.objectContaining({ book: { slug: BOOK, title: 'Pride and Prejudice' }, chapter: 'chapter-1', page: 1 }),
-    ]);
+    expect(exported.bookmarks).toEqual([expect.objectContaining({ book: { slug: BOOK, title: 'Pride and Prejudice' }, chapter: 'chapter-1', page: 1 })]);
 
     const removed = await folioApi.deleteBookmark(bookmark.id);
 

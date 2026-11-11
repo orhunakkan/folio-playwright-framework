@@ -76,20 +76,13 @@ test('finds a secret in a deflated or stored zip entry, as in a blob report', ()
 
 test('finds a secret in a zip inside a zip, as a trace inside a report', () => {
   const file = write('nested.zip', zip({ 'trace.zip': zip({ 'trace.network': leak }) }));
-  assert.deepEqual(findSecrets([file], SECRETS), [
-    { name: 'PLACEHOLDER_TOKEN', file: `${file} → trace.zip → trace.network` },
-  ]);
+  assert.deepEqual(findSecrets([file], SECRETS), [{ name: 'PLACEHOLDER_TOKEN', file: `${file} → trace.zip → trace.network` }]);
 });
 
 test("finds a secret in the HTML report's embedded base64 zip", () => {
   const embedded = zip({ 'report.json': leak }).toString('base64');
-  const file = write(
-    'index.html',
-    `<template id="playwrightReportBase64">data:application/zip;base64,${embedded}</template>`,
-  );
-  assert.deepEqual(findSecrets([file], SECRETS), [
-    { name: 'PLACEHOLDER_TOKEN', file: `${file} → embedded zip → report.json` },
-  ]);
+  const file = write('index.html', `<template id="playwrightReportBase64">data:application/zip;base64,${embedded}</template>`);
+  assert.deepEqual(findSecrets([file], SECRETS), [{ name: 'PLACEHOLDER_TOKEN', file: `${file} → embedded zip → report.json` }]);
 });
 
 test('finds nothing in files without secrets, and in a missing folder', () => {

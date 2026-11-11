@@ -3,8 +3,7 @@ import { FAKE_VOICE, fakeDeviceSpeech, spokenText } from '../src/mocking/device-
 import { installClock, letTimePass } from '../src/mocking/time.ts';
 
 const BOOK = 'pride-and-prejudice';
-const FIRST_SENTENCE =
-  'It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.';
+const FIRST_SENTENCE = 'It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.';
 
 // The device's own voice, faked: CI machines have none (src/mocking/device-speech.ts). Folio's downloadable voice
 // and ElevenLabs voices are left alone.
@@ -15,9 +14,7 @@ test.describe('Read aloud', { tag: '@regression' }, () => {
 
     await readerPage.readAloud();
 
-    await expect(readerPage.player.openButton).toHaveAccessibleName(
-      'Open player: Pride and Prejudice Ch. 1 · p. 1 · Device voice',
-    );
+    await expect(readerPage.player.openButton).toHaveAccessibleName('Open player: Pride and Prejudice Ch. 1 · p. 1 · Device voice');
     await expect(readerPage.player.pauseButton).toBeVisible();
     await expect.poll(async () => (await spokenText(page)).slice(0, 2)).toEqual(['Chapter 1.', FIRST_SENTENCE]);
   });
@@ -38,12 +35,7 @@ test.describe('Read aloud', { tag: '@regression' }, () => {
     await expect(readerPage.player.progress).not.toHaveAttribute('aria-valuenow', '0');
   });
 
-  test('the open player is accessible and fits the screen', async ({
-    page,
-    readerPage,
-    scanAccessibility,
-    horizontalOverflow,
-  }) => {
+  test('the open player is accessible and fits the screen', async ({ page, readerPage, scanAccessibility, horizontalOverflow }) => {
     await fakeDeviceSpeech(page);
     await readerPage.open(BOOK, 1);
     await readerPage.readAloud();

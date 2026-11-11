@@ -1,12 +1,4 @@
-import type {
-  APIRequestContext,
-  APIResponse,
-  BrowserContext,
-  ExpectMatcherState,
-  MatcherReturnType,
-  Page,
-  Response,
-} from '@playwright/test';
+import type { APIRequestContext, APIResponse, BrowserContext, ExpectMatcherState, MatcherReturnType, Page, Response } from '@playwright/test';
 import { z } from 'zod';
 import { schemaIssues } from '../api/folio-api.ts';
 import { BUDGETS, type WebVitals } from '../checks/web-vitals.ts';
@@ -40,15 +32,10 @@ export const matchers = {
    * user: `await expect(page).toBeSignedIn({ as: testUser.username })`. Asks Folio, so it holds on every screen
    * size; retries until the expect timeout. `.not.toBeSignedIn()` checks the visitor is signed out.
    */
-  async toBeSignedIn(
-    this: ExpectMatcherState,
-    received: Page | BrowserContext | APIRequestContext,
-    options: { as?: string; timeout?: number } = {},
-  ): Promise<MatcherReturnType> {
+  async toBeSignedIn(this: ExpectMatcherState, received: Page | BrowserContext | APIRequestContext, options: { as?: string; timeout?: number } = {}): Promise<MatcherReturnType> {
     const request = 'request' in received ? received.request : received;
     const deadline = Date.now() + (options.timeout ?? this.timeout);
-    const isSignedInAsAsked = (who: string | null): boolean =>
-      who !== null && (options.as === undefined || who === options.as);
+    const isSignedInAsAsked = (who: string | null): boolean => who !== null && (options.as === undefined || who === options.as);
 
     let who = await whoIsSignedIn(request);
     while (isSignedInAsAsked(who) === this.isNot && Date.now() < deadline) {
@@ -62,9 +49,7 @@ export const matchers = {
     return {
       name: 'toBeSignedIn',
       pass,
-      message: () =>
-        `${this.utils.matcherHint('toBeSignedIn', undefined, '', { isNot: this.isNot })}\n\n` +
-        `Expected: ${this.isNot ? 'not ' : ''}${expected}\nReceived: ${actual}`,
+      message: () => `${this.utils.matcherHint('toBeSignedIn', undefined, '', { isNot: this.isNot })}\n\n` + `Expected: ${this.isNot ? 'not ' : ''}${expected}\nReceived: ${actual}`,
     };
   },
 
@@ -95,9 +80,7 @@ export const matchers = {
       pass: result.success,
       message: () =>
         `${this.utils.matcherHint('toMatchSchema', undefined, 'schema', { isNot: this.isNot })}\n\n` +
-        (result.success
-          ? `${requestName(received)}'s body matches the schema`
-          : `${requestName(received)}'s body doesn't match the schema:\n${schemaIssues(result.error)}`),
+        (result.success ? `${requestName(received)}'s body matches the schema` : `${requestName(received)}'s body doesn't match the schema:\n${schemaIssues(result.error)}`),
     };
   },
 
@@ -124,9 +107,7 @@ export const matchers = {
     return {
       name: 'toBeWithinBudgets',
       pass: lines.every(({ within }) => within),
-      message: () =>
-        `${this.utils.matcherHint('toBeWithinBudgets', undefined, '', { isNot: this.isNot })}\n\n` +
-        lines.map(({ within, text }) => `${within ? '✓' : '✗'} ${text}`).join('\n'),
+      message: () => `${this.utils.matcherHint('toBeWithinBudgets', undefined, '', { isNot: this.isNot })}\n\n` + lines.map(({ within, text }) => `${within ? '✓' : '✗'} ${text}`).join('\n'),
     };
   },
 };

@@ -576,10 +576,13 @@ How the framework uses it (step 3):
   - **A Folio bug: a downloaded chapter opened offline throws React error #418** (hydration mismatch) in
     Chromium. It is in `KNOWN_CONSOLE_ERRORS`, scoped with `onlyWhen` to tests that went offline (`goOffline` adds
     a `went offline` annotation), so the same error anywhere else still fails. Delete it when dev is fixed.
-  - **In Playwright's Firefox, the offline download stays at 0%** with no error, while Chromium finishes in
-    seconds; the service worker is registered and in control in both. Unconfirmed whether Folio or the test setup
-    (dev's basic auth on service-worker requests) is the cause, so the test is skipped in Firefox with that reason.
-    Try a download in a real Firefox to rule out Folio.
+  - **In Playwright's Firefox, the offline download stayed at 0%** with no error, while Chromium finished in
+    seconds. Found later the same day, headed: Folio awaits `navigator.storage.persist()` before the download
+    starts, and Firefox answers it only after the reader clicks Allow or Block on a "store data in persistent
+    storage?" prompt; Chromium decides on its own. Not basic auth, and not a mock: the Firefox project sets
+    Firefox's testing prefs `dom.storageManager.prompt.testing` and `.allow`, which answer Allow as a reader would.
+    The test runs in Firefox too, with no skip. (Worth raising with Folio: until the reader answers the prompt, the
+    download shows 0% with no hint why.)
 - **The Sleep timer counts listening time, not wall time**: jumping the clock 15 minutes left "Sleep · 15 min" as
   it was. The time case therefore checks reading progress, which AGENTS.md names, rather than the timer.
 - **A framework race, fixed:** `BookPanel.open` decided which layout the reader had before it had rendered after a

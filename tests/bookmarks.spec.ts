@@ -4,11 +4,7 @@ import { failNextRequest } from '../src/mocking/error-responses.ts';
 const BOOK = 'pride-and-prejudice';
 
 test.describe('Bookmarks', { tag: '@regression' }, () => {
-  test('bookmark a page and come back to it from the bookmarks list', async ({
-    page,
-    readerPage,
-    testUser: _signedIn,
-  }) => {
+  test('bookmark a page and come back to it from the bookmarks list', async ({ page, readerPage, testUser: _signedIn }) => {
     await readerPage.open(BOOK, 1);
     const saved = await readerPage.bookmarkThisPage();
 
@@ -51,11 +47,7 @@ test.describe('Bookmarks', { tag: '@regression' }, () => {
     await expect(readerPage.panel.bookmark('Ch. 2 · p. 1')).toBeVisible();
   });
 
-  test('a bookmark that fails to save says so, and saves when tried again', async ({
-    page,
-    readerPage,
-    testUser: _signedIn,
-  }) => {
+  test('a bookmark that fails to save says so, and saves when tried again', async ({ page, readerPage, testUser: _signedIn }) => {
     await failNextRequest(page, '**/account/bookmarks/new', 500);
     await readerPage.open(BOOK, 1);
 
@@ -71,12 +63,7 @@ test.describe('Bookmarks', { tag: '@regression' }, () => {
     await expect(readerPage.bookmarkButton).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('the reader with its bookmarks open is accessible and fits the screen', async ({
-    readerPage,
-    scanAccessibility,
-    horizontalOverflow,
-    testUser: _signedIn,
-  }) => {
+  test('the reader with its bookmarks open is accessible and fits the screen', async ({ readerPage, scanAccessibility, horizontalOverflow, testUser: _signedIn }) => {
     await readerPage.open(BOOK, 1);
     await readerPage.bookmarkThisPage();
     await readerPage.panel.showBookmarks();

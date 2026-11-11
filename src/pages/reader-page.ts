@@ -4,8 +4,7 @@ import { ReadAloudPlayer } from '../components/read-aloud-player.ts';
 import { isPostTo } from '../support/network.ts';
 
 /** The Folio bug `addNote` works around, as it is noted on a test that hits it. */
-export const NOTE_BOX_RACE =
-  'Pressing Note while the highlights are still loading saves the highlight but never opens its note box (found 2026-11-11).';
+export const NOTE_BOX_RACE = 'Pressing Note while the highlights are still loading saves the highlight but never opens its note box (found 2026-11-11).';
 
 /** The reader: one page of a chapter, at /read/<book>/chapter-<n>. */
 export class ReaderPage {
@@ -53,11 +52,7 @@ export class ReaderPage {
 
   /** Opens the first page of a chapter. `book` is the book's slug, e.g. `pride-and-prejudice`. */
   async open(book: string, chapter: number): Promise<void> {
-    await test.step(
-      `open ${book}, chapter ${String(chapter)}`,
-      () => this.page.goto(`/read/${book}/chapter-${String(chapter)}`),
-      { box: true },
-    );
+    await test.step(`open ${book}, chapter ${String(chapter)}`, () => this.page.goto(`/read/${book}/chapter-${String(chapter)}`), { box: true });
   }
 
   async turnPage(): Promise<void> {

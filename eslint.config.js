@@ -66,8 +66,7 @@ export default defineConfig(
       'no-restricted-syntax': [
         'error',
         {
-          selector:
-            'CallExpression[callee.property.name=/^(route|routeFromHAR|routeWebSocket|unroute|setOffline|addInitScript)$/]',
+          selector: 'CallExpression[callee.property.name=/^(route|routeFromHAR|routeWebSocket|unroute|setOffline|addInitScript)$/]',
           message: 'Fake the network, offline, read-aloud or time only through src/mocking/ (AGENTS.md).',
         },
         {
@@ -82,10 +81,7 @@ export default defineConfig(
     // Config meta-tests run on Node's own test runner, whose test() calls need no await.
     files: ['meta/**/*.ts'],
     rules: {
-      '@typescript-eslint/no-floating-promises': [
-        'error',
-        { allowForKnownSafeCalls: [{ from: 'package', package: 'node:test', name: ['test', 'describe', 'it'] }] },
-      ],
+      '@typescript-eslint/no-floating-promises': ['error', { allowForKnownSafeCalls: [{ from: 'package', package: 'node:test', name: ['test', 'describe', 'it'] }] }],
     },
   },
 

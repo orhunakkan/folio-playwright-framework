@@ -120,7 +120,5 @@ export const ManifestSchema = z.object({
   start_url: z.string().startsWith('/'),
   scope: z.string().startsWith('/'),
   display: z.enum(['standalone', 'fullscreen', 'minimal-ui', 'browser']),
-  icons: z
-    .array(z.object({ src: z.string().startsWith('/'), sizes: z.string().regex(/^\d+x\d+$/), type: z.string() }))
-    .min(1),
+  icons: z.array(z.object({ src: z.string().startsWith('/'), sizes: z.string().regex(/^\d+x\d+$/), type: z.string() })).min(1),
 });
