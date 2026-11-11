@@ -71,6 +71,8 @@ run behaves and looks the same on macOS, on any Linux distribution, and in CI. Y
 | `npm test -- --grep @visual --update-snapshots` | Remakes the visual baselines, after a deliberate design change |
 | `npm run test:perf` | The web-vitals budgets (`@perf`), alone, in Chromium; CI runs them nightly |
 | `npm run test:ui` | UI mode, at <http://localhost:9324> |
+| `npm run test:bdd` | The BDD scenarios in `bdd/features/`, in every project ([bdd/README.md](bdd/README.md)) |
+| `npm run bdd:steps` | Every BDD step sentence, to reuse their wording in a new scenario |
 | `npx playwright show-report` | Opens the last run's HTML report |
 | `node scripts/scan-secrets.ts <folder>` | Fails if a secret value is in the folder's files, even inside zips |
 | `npm run check` | Typecheck, lint, format check and config meta-tests; needs no credentials |
@@ -91,6 +93,7 @@ run behaves and looks the same on macOS, on any Linux distribution, and in CI. Y
 | `src/config/` | The dev URL, the typed (zod) env, the run ID, and the image every run uses |
 | `scripts/` | `playwright.ts` runs Playwright in that image (`npm test` uses it); `scan-secrets.ts` checks reports |
 | `specs/` | Test plans made with Playwright's planner agent; `.claude/agents/` holds the agents |
+| `bdd/` | Gherkin feature files and their steps, run through playwright-bdd ([bdd/README.md](bdd/README.md)) |
 | `meta/` | Tests of the Playwright config itself, run with `node --test` |
 
 Some of the choices behind it:
@@ -114,6 +117,9 @@ Some of the choices behind it:
 - **Playwright's test agents** (planner, generator, healer) are set up for Claude Code, safely: they run in the
   pinned image, start from a fresh test user, and can't see dev's credentials. See
   [docs/test-agents.md](docs/test-agents.md); [specs/highlights.md](specs/highlights.md) is a plan they made.
+- **BDD scenarios** beside the specs: 18 Gherkin scenarios in `bdd/features/`, run through playwright-bdd with the
+  same fixtures, projects, image and report, and chosen to show every Gherkin and playwright-bdd feature that fits
+  the rules. See [bdd/README.md](bdd/README.md) and [ADR 0009](docs/adr/0009-bdd-through-playwright-bdd.md).
 - **Role and label locators only**, enforced by ESLint, so the tests read like a user and catch accessibility gaps.
 - **Every journey ends with an axe scan** (WCAG 2.2 AA) and a check that the page doesn't scroll sideways.
 - **Every test fails on a console error or an uncaught page error**, checked by the framework's `context` fixture.
@@ -133,8 +139,8 @@ Some of the choices behind it:
   secret values, inside its zips too, before it is uploaded or published. One check, `CI passed`, must be green
   before a pull request can merge into `main`. Renovate keeps dependencies current, moving Playwright and its image
   together.
-- **Flaky tests are stopped at the door:** a pull request's new or changed specs run five times over in every
-  project, with no retries, and one failed repeat blocks the merge.
+- **Flaky tests are stopped at the door:** a pull request's new or changed specs and feature files run five times
+  over in every project, with no retries, and one failed repeat blocks the merge.
 
 ## License
 

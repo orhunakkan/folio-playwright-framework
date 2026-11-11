@@ -6,7 +6,7 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  globalIgnores(['node_modules/', 'playwright-report/', 'test-results/', 'blob-report/', 'playwright/.cache/']),
+  globalIgnores(['node_modules/', 'playwright-report/', 'test-results/', 'blob-report/', 'playwright/.cache/', '.features-gen/', 'bdd-report/']),
 
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
@@ -31,7 +31,7 @@ export default defineConfig(
   },
 
   {
-    files: ['tests/**/*.ts', 'src/**/*.ts'],
+    files: ['tests/**/*.ts', 'src/**/*.ts', 'bdd/**/*.ts'],
     extends: [playwright.configs['flat/recommended']],
     rules: {
       // Role and label locators only: resilient, and accessible by design.
@@ -60,7 +60,7 @@ export default defineConfig(
 
   {
     // Mocking only for AGENTS.md's five cases, and only through src/mocking/, so every fake is in one small folder.
-    files: ['tests/**/*.ts', 'src/**/*.ts'],
+    files: ['tests/**/*.ts', 'src/**/*.ts', 'bdd/**/*.ts'],
     ignores: ['src/mocking/**'],
     rules: {
       'no-restricted-syntax': [
@@ -83,6 +83,15 @@ export default defineConfig(
     rules: {
       '@typescript-eslint/no-floating-promises': ['error', { allowForKnownSafeCalls: [{ from: 'package', package: 'node:test', name: ['test', 'describe', 'it'] }] }],
     },
+  },
+
+  {
+    // BDD steps (bdd/README.md): assertions go in `Then` steps only. The plugin treats `Then` as a test block, so
+    // `expect` in a Given, a When or a hook is a standalone expect (an error), and a Then without one fails
+    // `expect-expect`.
+    files: ['bdd/steps/**/*.ts'],
+    settings: { playwright: { globalAliases: { test: ['Then'] } } },
+    rules: { 'playwright/expect-expect': 'error' },
   },
 
   {

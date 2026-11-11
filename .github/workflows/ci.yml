@@ -71,6 +71,37 @@ jobs:
           path: blob-report/
           retention-days: 1
 
+  # The BDD scenarios (bdd/README.md): the feature files in bdd/features/, generated into tests by `bddgen` and run
+  # with the same fixtures, projects and image as the specs. One shard; its blob report is merged with the e2e
+  # shards', so there is one HTML report.
+  bdd:
+    name: BDD scenarios against dev
+    needs: check
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      options: --user 1001
+    env:
+      DEV_BASIC_USER: ${{ secrets.DEV_BASIC_USER }}
+      DEV_BASIC_PASS: ${{ secrets.DEV_BASIC_PASS }}
+      FOLIO_TEST_API_TOKEN: ${{ secrets.FOLIO_TEST_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: npm ci
+      - run: npm run test:bdd
+      - name: Check the blob report holds no secrets
+        id: scan
+        if: ${{ !cancelled() }}
+        run: node scripts/scan-secrets.ts blob-report
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() && steps.scan.outcome == 'success' }}
+        with:
+          name: blob-report-bdd
+          path: blob-report/
+          retention-days: 1
+
   # Web-vitals budgets (`@perf`), nightly and on manual runs. Alone, with one worker, so other tests don't skew the
   # timings. Its blob report is merged with the e2e shards', so the published report has the metrics.
   performance:
@@ -101,10 +132,11 @@ jobs:
           path: blob-report/
           retention-days: 1
 
-  # Burn-in: a pull request's new or changed specs, five times over in every project, with no retries. A flaky test
-  # fails here, before it reaches main. A pull request that changes no spec passes it without running anything.
+  # Burn-in: a pull request's new or changed specs and feature files, five times over in every project, with no
+  # retries. A flaky test fails here, before it reaches main. A pull request that changes neither passes it without
+  # running anything.
   burn-in:
-    name: Burn-in of changed specs (×5)
+    name: Burn-in of changed specs and features (×5)
     needs: check
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
@@ -124,13 +156,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
-      - name: Find the specs this pull request adds or changes
+      - name: Find the specs and feature files this pull request adds or changes
         id: specs
         run: |
           specs="$(git diff --name-only --diff-filter=d HEAD^1 HEAD -- 'tests/*.spec.ts' | tr '\n' ' ')"
+          # Each feature's generated test is .features-gen/<name>.feature.spec.js; its name filters the BDD run.
+          features="$(git diff --name-only --diff-filter=d HEAD^1 HEAD -- 'bdd/features/*.feature' | xargs -r -n1 basename | tr '\n' ' ')"
           echo "Changed specs: ${specs:-none}"
+          echo "Changed features: ${features:-none}"
           echo "specs=$specs" >> "$GITHUB_OUTPUT"
-      - if: steps.specs.outputs.specs != ''
+          echo "features=$features" >> "$GITHUB_OUTPUT"
+      - if: steps.specs.outputs.specs != '' || steps.specs.outputs.features != ''
         run: npm ci
       # `--retries=0`: CI's usual retries would let a flaky repeat pass on its second try.
       - if: steps.specs.outputs.specs != ''
@@ -140,20 +176,30 @@ jobs:
           PLAYWRIGHT_HTML_OPEN: never
         # $SPECS is split into one argument per spec on purpose.
         run: npm test -- $SPECS --repeat-each=5 --retries=0 --reporter=list,github,html
-      - name: Check the report holds no secrets
+      # The changed features, the same way, with their own HTML report beside the specs'.
+      - if: ${{ !cancelled() && steps.specs.outputs.features != '' }}
+        env:
+          FEATURES: ${{ steps.specs.outputs.features }}
+          PLAYWRIGHT_HTML_OPEN: never
+          PLAYWRIGHT_HTML_OUTPUT_DIR: bdd-report
+        # $FEATURES is split into one argument per feature on purpose.
+        run: npm run test:bdd -- $FEATURES --repeat-each=5 --retries=0 --reporter=list,github,html
+      - name: Check the reports hold no secrets
         id: scan
-        if: ${{ !cancelled() && steps.specs.outputs.specs != '' }}
-        run: node scripts/scan-secrets.ts playwright-report
+        if: ${{ !cancelled() && (steps.specs.outputs.specs != '' || steps.specs.outputs.features != '') }}
+        run: node scripts/scan-secrets.ts playwright-report bdd-report
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.scan.outcome == 'success' }}
         with:
           name: burn-in-report
-          path: playwright-report/
+          path: |
+            playwright-report/
+            bdd-report/
           retention-days: 14
 
   report:
     name: Merged HTML report
-    needs: [e2e, performance]
+    needs: [e2e, bdd, performance]
     # Also after failed tests: a red run's report is the one worth reading.
     if: ${{ !cancelled() && needs.e2e.result != 'skipped' }}
     runs-on: ubuntu-24.04
@@ -211,7 +257,7 @@ jobs:
   # jobs of a fork's pull request would make individual jobs awkward to require.
   ci-passed:
     name: CI passed
-    needs: [check, e2e, performance, burn-in, report]
+    needs: [check, e2e, bdd, performance, burn-in, report]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -220,17 +266,18 @@ jobs:
           EVENT: ${{ github.event_name }}
           CHECK: ${{ needs.check.result }}
           E2E: ${{ needs.e2e.result }}
+          BDD: ${{ needs.bdd.result }}
           PERFORMANCE: ${{ needs.performance.result }}
           BURN_IN: ${{ needs.burn-in.result }}
           REPORT: ${{ needs.report.result }}
         run: |
-          echo "check: $CHECK, e2e: $E2E, performance: $PERFORMANCE, burn-in: $BURN_IN, report: $REPORT, fork pull request: $FORK_PR"
+          echo "check: $CHECK, e2e: $E2E, bdd: $BDD, performance: $PERFORMANCE, burn-in: $BURN_IN, report: $REPORT, fork pull request: $FORK_PR"
           [[ "$CHECK" == success ]] || exit 1
-          if [[ "$FORK_PR" == true && "$E2E" == skipped ]]; then
+          if [[ "$FORK_PR" == true && "$E2E" == skipped && "$BDD" == skipped ]]; then
             echo "A fork's pull request: a maintainer runs the e2e tests before merging."
             exit 0
           fi
-          [[ "$E2E" == success && "$REPORT" == success ]] || exit 1
+          [[ "$E2E" == success && "$BDD" == success && "$REPORT" == success ]] || exit 1
           # Performance runs nightly and on manual runs only; there it must pass.
           if [[ "$EVENT" == schedule || "$EVENT" == workflow_dispatch ]]; then [[ "$PERFORMANCE" == success ]] || exit 1; fi
           # Burn-in runs on pull requests only; there it must pass.

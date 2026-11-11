@@ -8,6 +8,10 @@ export class LibraryPage {
   readonly filters: Locator;
   /** One region per series on the shelves, named after the series, e.g. `Jane Austen`. */
   readonly series: Locator;
+  /** The filters pressed now: `All` until another is pressed. */
+  readonly selectedFilters: Locator;
+  /** One entry per book on the shelves, each a link to the book's page. */
+  readonly books: Locator;
   /**
    * Parts that follow dev's catalogue rather than the page's design: the counts, the collections, the featured
    * series, the filters and the shelves. Visual tests mask them, so adding a book to dev doesn't fail them.
@@ -21,6 +25,8 @@ export class LibraryPage {
     this.heading = main.getByRole('heading', { level: 1 });
     this.series = main.getByRole('region');
     this.filters = main.getByRole('group', { name: 'Filter books' }).getByRole('button');
+    this.selectedFilters = main.getByRole('group', { name: 'Filter books' }).getByRole('button', { pressed: true });
+    this.books = this.series.getByRole('listitem');
     this.changingParts = [
       main.getByRole('complementary', { name: 'Library stats' }),
       main.getByRole('group', { name: 'Filter books' }),
@@ -36,6 +42,16 @@ export class LibraryPage {
 
   async open(): Promise<void> {
     await test.step('open the library', () => this.page.goto('/library'), { box: true });
+  }
+
+  /** A book on the shelves, by its title. */
+  book(title: string): Locator {
+    return this.books.getByRole('link', { name: title });
+  }
+
+  /** Opens a book's page from the shelves. */
+  async openBook(title: string): Promise<void> {
+    await test.step(`open the book ${title}`, () => this.book(title).click(), { box: true });
   }
 
   async filterBy(name: string): Promise<void> {

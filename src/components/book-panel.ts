@@ -12,6 +12,9 @@ export class BookPanel {
   readonly root: Locator;
   /** Only on screens too narrow for the panel: opens it as a dialog. */
   readonly openButton: Locator;
+  readonly contentsTab: Locator;
+  /** One link per chapter, in the Contents tab, named with its number first, e.g. `02 Chapter 2`. */
+  readonly chapters: Locator;
   readonly bookmarksTab: Locator;
   /** One entry per bookmark, in the Bookmarks tab. */
   readonly bookmarks: Locator;
@@ -30,6 +33,8 @@ export class BookPanel {
     this.page = page;
     this.root = page.getByRole('complementary', { name: 'Book contents panel' }).or(page.getByRole('dialog', { name: 'Contents' }));
     this.openButton = page.getByRole('button', { name: 'Contents', exact: true });
+    this.contentsTab = this.root.getByRole('tab', { name: 'Contents' });
+    this.chapters = this.root.getByRole('tabpanel', { name: 'Contents' }).getByRole('navigation', { name: 'Contents' }).getByRole('link');
     this.bookmarksTab = this.root.getByRole('tab', { name: 'Bookmarks' });
     this.bookmarks = this.root.getByRole('tabpanel', { name: 'Bookmarks' }).getByRole('listitem');
     this.highlightsTab = this.root.getByRole('tab', { name: /^Highlights/ });
@@ -51,6 +56,11 @@ export class BookPanel {
       .filter({ hasText: /^Note: / });
   }
 
+  /** A chapter's link in the Contents tab, e.g. `chapter(2)` for `02 Chapter 2`. */
+  chapter(chapter: number): Locator {
+    return this.chapters.filter({ hasText: new RegExp(`Chapter ${String(chapter)}$`) });
+  }
+
   /** A bookmark's entry, by the place it marks as the panel shows it, e.g. `Ch. 1 · p. 1`. */
   bookmark(place: string): Locator {
     return this.bookmarks.filter({ hasText: place });
@@ -68,6 +78,28 @@ export class BookPanel {
     if ((await this.openButton.getAttribute('aria-expanded')) === 'true') return;
 
     await test.step('open the book contents panel', () => this.openButton.click(), { box: true });
+  }
+
+  async showContents(): Promise<void> {
+    await test.step(
+      'show contents',
+      async () => {
+        await this.open();
+        await this.contentsTab.click();
+      },
+      { box: true },
+    );
+  }
+
+  async goToChapter(chapter: number): Promise<void> {
+    await test.step(
+      `go to chapter ${String(chapter)}`,
+      async () => {
+        await this.showContents();
+        await this.chapter(chapter).click();
+      },
+      { box: true },
+    );
   }
 
   async showBookmarks(): Promise<void> {

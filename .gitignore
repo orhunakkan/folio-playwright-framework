@@ -17,3 +17,9 @@ playwright/.runs/
 
 # Playwright test agents (MCP server snapshots)
 .playwright-mcp/
+
+# Tests generated from bdd/features/ by bddgen
+.features-gen/
+
+# The BDD burn-in report in CI
+bdd-report/

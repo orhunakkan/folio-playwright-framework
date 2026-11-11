@@ -21,6 +21,11 @@ export class HomePage {
     return this.page.getByRole('main').getByRole('group').filter({ hasText: text });
   }
 
+  /** A question's answer, by text it contains. On screen only once its question is open. */
+  answer(text: string): Locator {
+    return this.page.getByRole('main').getByRole('group').getByRole('paragraph').filter({ hasText: text });
+  }
+
   async open(): Promise<void> {
     await test.step('open the home page', () => this.page.goto('/'), { box: true });
   }

@@ -1,7 +1,7 @@
 # Architecture decision records
 
-Each record explains one thing the framework leaves out on purpose: the **Skipped** rows of the
-[blueprint](../framework-blueprint.md). A record is short: the context, the decision, and what follows from it.
+Each record explains one thing the framework leaves out on purpose (the **Skipped** rows of the
+[blueprint](../framework-blueprint.md)), or a choice between two tools. A record is short: the context, the decision, and what follows from it.
 When a decision changes, its record is marked *Superseded* and a new one explains the change.
 
 | ADR | Decision | Status |
@@ -14,3 +14,4 @@ When a decision changes, its record is marked *Superseded* and a new one explain
 | [0006](0006-no-database-reset-or-guard.md) | No database reset or guard | Accepted |
 | [0007](0007-no-bundle-leak-check.md) | No check for secrets leaking into Folio's bundles | Accepted |
 | [0008](0008-no-notifications.md) | No failure notifications | Accepted |
+| [0009](0009-bdd-through-playwright-bdd.md) | BDD scenarios through playwright-bdd, not cucumber-js | Accepted |

@@ -22,6 +22,20 @@ export class ReaderPage {
   /** Turns to the next page of the book. */
   readonly nextPageButton: Locator;
   /**
+   * The bar under the text, on every screen size: where the reader is, the chapter's pages, and Next page and
+   * Previous page links. Wide screens also have Next page and Previous page buttons beside the text; narrow ones
+   * only these links.
+   */
+  readonly pageNavigation: Locator;
+  /** Where the reader is, e.g. `Chapter 1 · Page 1 of 2`. */
+  readonly pagePosition: Locator;
+  /**
+   * Links in the page navigation. On a chapter's last page Next page gives way to the next chapter, and on its first
+   * page Previous page to the chapter before (the book's first page has a disabled Start of book instead).
+   */
+  readonly nextPageLink: Locator;
+  readonly previousPageLink: Locator;
+  /**
    * In the toolbar that appears over selected text. The same toolbar has Ask about this, Explain and Translate,
    * which call third-party services: tests never press them (see AGENTS.md).
    */
@@ -40,6 +54,10 @@ export class ReaderPage {
     this.chapterHeading = this.text.getByRole('heading', { level: 1 });
     this.notices = page.getByRole('status');
     this.nextPageButton = page.getByRole('button', { name: 'Next page' });
+    this.pageNavigation = page.getByRole('navigation', { name: 'Page navigation' });
+    this.pagePosition = this.pageNavigation.getByRole('paragraph');
+    this.nextPageLink = this.pageNavigation.getByRole('link', { name: 'Next page' });
+    this.previousPageLink = this.pageNavigation.getByRole('link', { name: 'Previous page' });
     this.noteButton = page.getByRole('button', { name: 'Note', exact: true });
     this.highlightButton = page.getByRole('button', { name: 'Highlight', exact: true });
     this.readAloudButton = page.getByRole('button', { name: 'Read aloud', exact: true });
@@ -57,6 +75,16 @@ export class ReaderPage {
 
   async turnPage(): Promise<void> {
     await test.step('turn to the next page', () => this.nextPageButton.click(), { box: true });
+  }
+
+  /** Turns to the next page with the page navigation, which every screen size has (`turnPage` needs a wide one). */
+  async nextPage(): Promise<void> {
+    await test.step('go to the next page', () => this.nextPageLink.click(), { box: true });
+  }
+
+  /** Turns back a page within the chapter, with the page navigation. */
+  async previousPage(): Promise<void> {
+    await test.step('go back a page', () => this.previousPageLink.click(), { box: true });
   }
 
   /**

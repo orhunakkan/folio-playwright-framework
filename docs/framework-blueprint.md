@@ -41,6 +41,7 @@ third-party testing, limited mocking, public repository.
 | | Security | Header checks (`@http`) | Cheap, meaningful checks | ✓ |
 | | Flakiness | Burn-in (`--repeat-each`) on changed specs in PRs | Stops flaky tests at the door | ✓ |
 | | AI | Playwright test agents (planner, generator, healer) with docs | Fits an "agentic" story | ✓ |
+| | BDD | Gherkin feature files in `bdd/`, run through playwright-bdd with the framework's fixtures, projects and report ([ADR 0009](adr/0009-bdd-through-playwright-bdd.md)) | Shows the BDD style on real journeys, without a second runner | |
 | **Skipped (with ADR)** | Third parties | No tests, no stubs | AGENTS.md rule | ✓ |
 | | Other mocking | No HAR replay or extra mocks | AGENTS.md rule | ✓ |
 | | Allure | HTML report only | One good reporter beats two | ✓ |
@@ -85,6 +86,7 @@ no runtime code. Versions were current on npm on 2026-11-10.
     "eslint-plugin-playwright": "^2.12.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
+    "playwright-bdd": "9.2.1",
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.2",
@@ -103,6 +105,7 @@ no runtime code. Versions were current on npm on 2026-11-10.
 | `eslint`, `@eslint/js`, `typescript-eslint`, `eslint-plugin-playwright` | Linting, including TypeScript and Playwright rules |
 | `prettier`, `eslint-config-prettier` | Formatting, without clashing with ESLint |
 | `husky`, `lint-staged` | Pre-commit lint and format |
+| `playwright-bdd` | Gherkin feature files as Playwright tests (`bdd/`); pinned exactly, added in step 19 |
 
 Notes:
 
@@ -149,6 +152,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 16. Performance | Web-vitals budgets (LCP, CLS, INP) measured in the browser, run nightly | The nightly run records the metrics in the report and fails when one is over budget | ✓ |
 | 17. AI | Playwright's test agents (planner, generator, healer), set up as Playwright documents them, with docs on using them within AGENTS.md | The agent files are committed, the docs explain them, and one plan made with them for a real journey is in the repo | ✓ |
 | 18. More journeys + mocking | New journeys (e.g. highlights, reading settings, search, offline reading, read-aloud), building `src/mocking/` with the first test that needs one of the five allowed cases | The Mocking row holds only cases real specs use, and each case has a spec | ✓ |
+| 19. BDD | The Gherkin showcase in [bdd-plan.md](bdd-plan.md): playwright-bdd, 18 scenarios in 8 feature files, a `bdd` CI job, burn-in for features | The plan's build steps are done, CI is green, and the merged report shows both the specs and the scenarios | |
 
 Steps 1–5 built the foundation, and steps 6–11 finish the Core tier. Steps 12–17 build the open Showcase rows, and
 step 18 adds journeys and, with the first test that needs one of the five allowed cases, the mocking folder (the
