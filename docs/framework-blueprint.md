@@ -310,3 +310,6 @@ How the framework uses it (step 3):
   `context.request` rethrow errors with those values replaced by `[redacted]`. Checked on 2026-11-11 in CI mode
   with a deliberately timed-out call: an unwrapped request context leaked the header and the token into the output;
   the framework's were clean in the output, the report and `test-results/`. `meta/redact.test.ts` guards it.
+- **For step 11: the JSON reporter writes the whole config into its output, basic-auth password included.** CI
+  doesn't use it, and the HTML report was clean. Sharding uploads blob reports as artifacts, so check them for
+  secrets before the first sharded run; they may embed the config the same way.
