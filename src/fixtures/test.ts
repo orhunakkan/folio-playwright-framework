@@ -1,6 +1,7 @@
-import { test as base } from '@playwright/test';
+import { expect, test as base } from '@playwright/test';
 import { TestApi, type CreateUserOptions, type TestUser } from '../api/test-api.ts';
 import { scanAccessibility, type AccessibilityViolation } from '../checks/accessibility.ts';
+import { watchConsoleErrors } from '../checks/console-errors.ts';
 import { horizontalOverflow } from '../checks/layout.ts';
 import { ReaderPage } from '../pages/reader-page.ts';
 
@@ -23,6 +24,9 @@ interface Fixtures {
   scanAccessibility: () => Promise<AccessibilityViolation[]>;
   /** Pixels the page is wider than the viewport. Assert `await expect.poll(horizontalOverflow).toBe(0)`. */
   horizontalOverflow: () => Promise<number>;
+
+  /** Automatic: fails the test if any page logged a console error or threw an uncaught error. */
+  noConsoleErrors: undefined;
 }
 
 /** The one module specs import `test` and `expect` from. */
@@ -58,4 +62,14 @@ export const test = base.extend<Fixtures>({
   horizontalOverflow: async ({ page }, use) => {
     await use(() => horizontalOverflow(page));
   },
+
+  noConsoleErrors: [
+    async ({ context }, use, testInfo) => {
+      // On the context, not the page, so popups and extra pages are watched too.
+      const unexpectedErrors = watchConsoleErrors(context, testInfo);
+      await use(undefined);
+      expect(unexpectedErrors(), 'console errors or page errors').toEqual([]);
+    },
+    { auto: true, title: 'check for console and page errors' },
+  ],
 });

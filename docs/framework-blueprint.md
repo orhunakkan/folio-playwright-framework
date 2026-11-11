@@ -14,7 +14,7 @@ third-party testing, limited mocking, public repository.
 | --- | --- | --- | --- | --- |
 | **Core** | Structure | Page objects + component objects, user-intent methods, no assertions inside | Readable, maintainable specs | ✓ |
 | | Fixtures | Custom `test`/`expect`, page objects injected as fixtures | One import, less boilerplate | ✓ |
-| | Fixtures | Auto fixture that fails a test on console errors or page errors | Catches hidden JS bugs on every test | |
+| | Fixtures | Auto fixture that fails a test on console errors or page errors | Catches hidden JS bugs on every test | ✓ |
 | | Locators | Role and label locators only, enforced by lint | Resilient, accessible by design | ✓ |
 | | Assertions | Web-first, ARIA state, response status | Assertions retry on their own and check the user's view and the network | ✓ |
 | | Isolation | Each test owns its data; `fullyParallel` | Runs in any order, retries safely | ✓ |
@@ -139,7 +139,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 4. First real journey | First page objects, one journey (e.g. bookmarks), axe scan, overflow check | A full spec in the style the rest will follow | ✓ |
 | 5. CI | Create the public GitHub repository, add the secrets, add a GitHub Actions workflow in the pinned Playwright image (check its Node version against `engines`), `npm audit --audit-level=high` | The same tests pass on GitHub | ✓ |
 | 6. Docs | README quickstart, CONTRIBUTING, one ADR per Skipped row | A visitor gets from clone to a passing run with the README alone, and every Skipped row has its ADR | ✓ |
-| 7. Console errors | Auto fixture that fails a test on console errors or page errors; first check what dev logs today (e.g. the Cloudflare beacon) | Every test fails on an unexpected console or page error, and a deliberately broken page proves it | |
+| 7. Console errors | Auto fixture that fails a test on console errors or page errors; first check what dev logs today (e.g. the Cloudflare beacon) | Every test fails on an unexpected console or page error, and a deliberately broken page proves it | ✓ |
 | 8. Cleanup and test data | Teardown project that deletes what the run created; Faker factories with a seed; run ID prefix on created data | A run leaves nothing behind on dev, and the data it creates is traceable to the run | |
 | 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | |
 | 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, a `test:docker` script for WebKit where Playwright doesn't support the Linux distribution; the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | |
@@ -243,3 +243,21 @@ How the framework uses it (step 3):
   gets a new record.
 - **CONTRIBUTING repeats the spec rules** from "how a spec is written" in contributor terms, and asks for
   `--repeat-each=5` on a new or changed spec.
+
+## Decided: console errors (step 7)
+
+- **What dev logs today: nothing.** On 2026-11-11, in Chromium and Firefox, signed in and out, the home page, library,
+  book page, sign-in, legal pages, account pages and reader logged no console messages and threw no page errors.
+  Cloudflare's analytics beacon loads (`static.cloudflareinsights.com`) and reports (`POST /cdn-cgi/rum` → 204)
+  without logging anything, so it needs no exception. Pages near third-party features (plan, credits, flashcards)
+  and the export were not visited.
+- **The `noConsoleErrors` fixture is automatic** and fails a test on `console.error`, a failed `console.assert`, or
+  an uncaught page error. Warnings don't count. It listens on the browser context, so popups are covered too, and
+  it checks after the test body, so the failure lists every message at once.
+- **Known errors go in `KNOWN_CONSOLE_ERRORS`** in `src/checks/console-errors.ts`, like `KNOWN_ISSUES` for
+  accessibility: as narrow as possible, noted on the test, deleted once fixed. It starts empty.
+- **`tests/console-errors.spec.ts` proves the fixture works**: two local pages (`setContent`), one that logs an
+  error and one that throws, each marked `test.fail`. If the fixture stops catching errors, they go red.
+- **Seen in passing, for step 10:** Firefox's first request to dev gets a `401` (the basic-auth challenge) before it
+  sends the credentials; the navigation itself still answers 200. Dev sends no `Content-Security-Policy` header
+  (for step 9).

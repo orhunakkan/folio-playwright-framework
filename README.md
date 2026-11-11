@@ -22,8 +22,8 @@ cp .env.example .env   # then fill in the three values (see below)
 npm test
 ```
 
-`npm test` runs every spec against dev and ends with a summary such as `6 passed`. `npx playwright show-report`
-opens the HTML report.
+`npm test` runs every spec against dev and ends with a summary such as `8 passed`, with no failures.
+`npx playwright show-report` opens the HTML report.
 
 ### Credentials
 
@@ -66,7 +66,7 @@ Without them you can still run `npm run check` (typecheck, lint, format and the 
 | `src/fixtures/test.ts` | The `test` and `expect` every spec imports, with the framework's fixtures |
 | `src/pages/`, `src/components/` | Page and component objects: locators and user-intent methods, no assertions |
 | `src/api/` | The client for Folio's test API |
-| `src/checks/` | The accessibility scan and the horizontal overflow check |
+| `src/checks/` | The accessibility scan, the horizontal overflow check, and the console error check |
 | `src/config/env.ts` | The dev URL, and the typed (zod) env |
 | `meta/` | Tests of the Playwright config itself, run with `node --test` |
 
@@ -76,6 +76,7 @@ Some of the choices behind it:
   never use the sign-up form or real accounts, so they run in any order and in parallel.
 - **Role and label locators only**, enforced by ESLint, so the tests read like a user and catch accessibility gaps.
 - **Every journey ends with an axe scan** (WCAG 2.2 AA) and a check that the page doesn't scroll sideways.
+- **Every test fails on a console error or an uncaught page error**, through an automatic fixture.
 - **No traces in CI.** Traces record request headers, which hold dev's credentials, so a public CI run records none.
   Locally, traces are kept on failure: don't share a local report.
 

@@ -23,6 +23,8 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every 
 - **End each journey with the accessibility and overflow checks**, once, at its richest state:
   `expect(await scanAccessibility()).toEqual([])` and `await expect.poll(horizontalOverflow).toBe(0)`. A real
   Folio accessibility bug goes in `KNOWN_ISSUES` in `src/checks/accessibility.ts`, as narrowly as possible.
+- **Every test fails on a console error or an uncaught page error.** That check is automatic. An error Folio really
+  logs goes in `KNOWN_CONSOLE_ERRORS` in `src/checks/console-errors.ts`, as narrowly as possible.
 - **Skip only with a condition and a reason**: `test.skip(condition, 'why')`. ESLint rejects a bare `test.skip`.
 
 Explore the real dev site before writing a selector or an assertion. Don't guess text or behaviour.
