@@ -396,3 +396,21 @@ How the framework uses it (step 3):
   found every npm package, the pinned Actions and the three uses of the Playwright image. Its first run wanted to
   raise `engines` to Node `>=26.13.0` and npm `>=11.21.2` or 12, past the image's npm 11.20.0, so `engines` updates
   are off: Node and npm come from the image.
+
+## Decided: flakiness (step 12)
+
+- **The `burn-in` job runs on same-repository pull requests.** It diffs the pull request's merge commit against its
+  first parent (the base branch) and takes the specs it adds, changes or renames (`tests/*.spec.ts`, deletions
+  left out). It runs them with `--repeat-each=5 --retries=0` in every project: CI's usual two retries would let a
+  flaky repeat pass on its second try. `setup` and `cleanup` still run once, not five times. A pull request that
+  changes no spec passes the job without installing anything.
+- **Only specs are burned in, not what they use.** A change to a page object, fixture or the config runs in the
+  normal e2e jobs, once per project with retries. Burning in every spec that imports a changed file would burn in
+  most of the suite on most pull requests.
+- **`CI passed` needs `burn-in`**, and on a pull request it must be `success`; on pushes, the nightly run and
+  manual runs it is skipped. A fork's pull request skips it, like e2e. `meta/ci.test.ts` fails if any job other
+  than `pages` (which runs after main has its result) is missing from `CI passed`'s `needs`.
+- **Its report is an HTML report**, scanned for secrets before upload (`burn-in-report`, 14 days), like the
+  others. It is never published to GitHub Pages.
+- **Spec names reach the shell through an environment variable**, not a `${{ }}` expression in the script, so a
+  file name can't inject a command.

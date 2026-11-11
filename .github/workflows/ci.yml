@@ -71,6 +71,54 @@ jobs:
           path: blob-report/
           retention-days: 1
 
+  # Burn-in: a pull request's new or changed specs, five times over in every project, with no retries. A flaky test
+  # fails here, before it reaches main. A pull request that changes no spec passes it without running anything.
+  burn-in:
+    name: Burn-in of changed specs (×5)
+    needs: check
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      options: --user 1001
+    env:
+      DEV_BASIC_USER: ${{ secrets.DEV_BASIC_USER }}
+      DEV_BASIC_PASS: ${{ secrets.DEV_BASIC_PASS }}
+      FOLIO_TEST_API_TOKEN: ${{ secrets.FOLIO_TEST_API_TOKEN }}
+    steps:
+      # A pull request's checkout is its merge commit: its first parent is the base branch, so the diff between the
+      # two is exactly what the pull request changes.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      - name: Find the specs this pull request adds or changes
+        id: specs
+        run: |
+          specs="$(git diff --name-only --diff-filter=d HEAD^1 HEAD -- 'tests/*.spec.ts' | tr '\n' ' ')"
+          echo "Changed specs: ${specs:-none}"
+          echo "specs=$specs" >> "$GITHUB_OUTPUT"
+      - if: steps.specs.outputs.specs != ''
+        run: npm ci
+      # `--retries=0`: CI's usual retries would let a flaky repeat pass on its second try.
+      - if: steps.specs.outputs.specs != ''
+        env:
+          # Through the environment, not `${{ }}` in the script, so a file name can't inject shell code.
+          SPECS: ${{ steps.specs.outputs.specs }}
+          PLAYWRIGHT_HTML_OPEN: never
+        # $SPECS is split into one argument per spec on purpose.
+        run: npm test -- $SPECS --repeat-each=5 --retries=0 --reporter=list,github,html
+      - name: Check the report holds no secrets
+        id: scan
+        if: ${{ !cancelled() && steps.specs.outputs.specs != '' }}
+        run: node scripts/scan-secrets.ts playwright-report
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() && steps.scan.outcome == 'success' }}
+        with:
+          name: burn-in-report
+          path: playwright-report/
+          retention-days: 14
+
   report:
     name: Merged HTML report
     needs: e2e
@@ -131,20 +179,24 @@ jobs:
   # jobs of a fork's pull request would make individual jobs awkward to require.
   ci-passed:
     name: CI passed
-    needs: [check, e2e, report]
+    needs: [check, e2e, burn-in, report]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - env:
+          EVENT: ${{ github.event_name }}
           CHECK: ${{ needs.check.result }}
           E2E: ${{ needs.e2e.result }}
+          BURN_IN: ${{ needs.burn-in.result }}
           REPORT: ${{ needs.report.result }}
         run: |
-          echo "check: $CHECK, e2e: $E2E, report: $REPORT, fork pull request: $FORK_PR"
+          echo "check: $CHECK, e2e: $E2E, burn-in: $BURN_IN, report: $REPORT, fork pull request: $FORK_PR"
           [[ "$CHECK" == success ]] || exit 1
           if [[ "$FORK_PR" == true && "$E2E" == skipped ]]; then
             echo "A fork's pull request: a maintainer runs the e2e tests before merging."
             exit 0
           fi
-          [[ "$E2E" == success && "$REPORT" == success ]]
+          [[ "$E2E" == success && "$REPORT" == success ]] || exit 1
+          # Burn-in runs on pull requests only; there it must pass.
+          [[ "$EVENT" != pull_request || "$BURN_IN" == success ]]

@@ -110,6 +110,8 @@ Some of the choices behind it:
   secret values, inside its zips too, before it is uploaded or published. One check, `CI passed`, must be green
   before a pull request can merge into `main`. Renovate keeps dependencies current, moving Playwright and its image
   together.
+- **Flaky tests are stopped at the door:** a pull request's new or changed specs run five times over in every
+  project, with no retries, and one failed repeat blocks the merge.
 
 ## License
 

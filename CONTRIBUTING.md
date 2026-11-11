@@ -58,6 +58,9 @@ npm test -- tests/<your-spec>.spec.ts --repeat-each=5         # a new or changed
   `test: highlights journey` or `docs: ADR for Allure`. A Git hook lints and formats staged files.
 - **CI must pass.** `main` requires the `CI passed` check, which is green only when every job is. Pull requests
   from forks get no secrets, so their e2e job is skipped; a maintainer runs the suite before merging.
+- **New and changed specs are burned in.** On a pull request, CI runs every spec it adds or changes five times in
+  every project, with no retries (`burn-in` job). One failed repeat fails `CI passed`. Fix the flakiness; don't
+  add a retry.
 - **Reports are scanned for secrets** in CI, before they are uploaded or published. If the scan fails, don't work
   around it: find what wrote the secret and redact it there.
 - **A new decision** that leaves something out on purpose gets an ADR in [docs/adr/](docs/adr/).
