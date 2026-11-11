@@ -26,7 +26,7 @@ third-party testing, limited mocking, public repository.
 | | Accessibility | Axe scan per journey | A11y is part of "done" | ✓ |
 | | Responsive | Desktop, phone and tablet projects; horizontal overflow check | Proves layouts hold up | |
 | | Cross-browser | Chromium, Firefox and WebKit on desktop | Wider coverage than Folio's own suite | |
-| | Tags & skips | `@smoke`, `@regression`, `@http`; conditional skips with reasons | Targeted runs, honest skips | |
+| | Tags & skips | `@smoke`, `@regression`, `@http`; conditional skips with reasons | Targeted runs, honest skips | ✓ |
 | | Reporting in tests | `test.step()` in page objects | Reports and traces read like a story | ✓ |
 | | Guards | `forbidOnly`, plus a meta-test that checks the config | The suite can't silently rot | ✓ |
 | | Debugging | Screenshot and video on failure; traces locally only (they hold secrets) | Any failure is diagnosable | ✓ |
@@ -38,7 +38,7 @@ third-party testing, limited mocking, public repository.
 | | API layer | Typed API client + zod response schemas | Shows API testing alongside UI | |
 | | Assertions | A few custom matchers (`toBeSignedIn()`) | Domain-language tests | |
 | | Performance | Web-vitals budgets, nightly | Covers more than functional testing | |
-| | Security | Header checks (`@http`) | Cheap, meaningful checks | |
+| | Security | Header checks (`@http`) | Cheap, meaningful checks | ✓ |
 | | Flakiness | Burn-in (`--repeat-each`) on changed specs in PRs | Stops flaky tests at the door | |
 | | AI | Playwright test agents (planner, healer) with docs | Fits an "agentic" story | |
 | **Skipped (with ADR)** | Third parties | No tests, no stubs | AGENTS.md rule | ✓ |
@@ -141,7 +141,7 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 6. Docs | README quickstart, CONTRIBUTING, one ADR per Skipped row | A visitor gets from clone to a passing run with the README alone, and every Skipped row has its ADR | ✓ |
 | 7. Console errors | Auto fixture that fails a test on console errors or page errors; first check what dev logs today (e.g. the Cloudflare beacon) | Every test fails on an unexpected console or page error, and a deliberately broken page proves it | ✓ |
 | 8. Cleanup and test data | Teardown project that deletes what the run created; Faker factories with a seed; run ID prefix on created data | A run leaves nothing behind on dev, and the data it creates is traceable to the run | ✓ |
-| 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | |
+| 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | ✓ |
 | 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, a `test:docker` script for WebKit where Playwright doesn't support the Linux distribution; the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | |
 | 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | |
 
@@ -251,9 +251,11 @@ How the framework uses it (step 3):
   Cloudflare's analytics beacon loads (`static.cloudflareinsights.com`) and reports (`POST /cdn-cgi/rum` → 204)
   without logging anything, so it needs no exception. Pages near third-party features (plan, credits, flashcards)
   and the export were not visited.
-- **The `noConsoleErrors` fixture is automatic** and fails a test on `console.error`, a failed `console.assert`, or
-  an uncaught page error. Warnings don't count. It listens on the browser context, so popups are covered too, and
-  it checks after the test body, so the failure lists every message at once.
+- **The check lives in the framework's `context` fixture** (an override of Playwright's own), and fails a test on
+  `console.error`, a failed `console.assert`, or an uncaught page error. Warnings don't count. Every test with a
+  page has a context, so every such test is checked, popups included; it checks after the test body, so the failure
+  lists every message at once. (Step 7 made it an automatic fixture; step 9 moved it into `context`, because an
+  automatic fixture that needs a context made API-only `@http` tests start a browser.)
 - **Known errors go in `KNOWN_CONSOLE_ERRORS`** in `src/checks/console-errors.ts`, like `KNOWN_ISSUES` for
   accessibility: as narrow as possible, noted on the test, deleted once fixed. It starts empty.
 - **`tests/console-errors.spec.ts` proves the fixture works**: two local pages (`setContent`), one that logs an
@@ -286,3 +288,25 @@ How the framework uses it (step 3):
   highlight, `POST /account/highlights/new`), type the note, Save (`POST /account/highlights/<id>` → 200), then find
   it after a reload and in Account → Highlights. The selection toolbar also has Ask about this, Explain and
   Translate, which are third-party: tests never press them.
+
+## Decided: `@http` (step 9)
+
+- **`tests/security-headers.spec.ts`** checks, on the home page, library, sign-in page, a redirect to sign in, a
+  404 and a stylesheet: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, and `X-Robots-Tag: noindex, nofollow` (dev must stay out of
+  search results). Pages with account details send `Cache-Control: … no-store`. Signing in over HTTP
+  (`src/api/session.ts`) sets `__Host-session` host-only, `Path=/`, `Secure`, `HttpOnly`, `SameSite=Lax`.
+- **Gaps on dev, as `test.fail` with a reason:** no `Strict-Transport-Security` and no `Content-Security-Policy`
+  (found 2026-11-11). They go red the day dev sends them, so the marker is removed then. Also absent, not tested:
+  `Permissions-Policy` and `Cross-Origin-Opener-Policy`. Plain `http://` answers dev's basic-auth 401 rather than
+  redirecting to HTTPS; it isn't tested, because sending credentials over plain HTTP would expose them.
+- **An `http` project runs `@http` tests, and browser projects leave them out** (`grepInvert`), so they run once,
+  not once per device and browser. `--grep @http` still runs `setup` and `cleanup`, as dependencies.
+- **Credentials are sent up front** (`httpCredentials.send: 'always'`, still only to dev's origin). After a 401
+  challenge, the request fixture's retry sometimes hung until it timed out under parallel load.
+- **API errors are redacted** (`src/support/redact.ts`). A failed API call's error lists its request headers:
+  dev's basic-auth header and the test API token. That error reaches the console, the `github` reporter and the
+  HTML report, so in CI it would be public. Traces being off didn't cover it. The framework's `request` and
+  `context.request` rethrow errors with those values replaced by `[redacted]`. Checked on 2026-11-11 in CI mode
+  with a deliberately timed-out call: an unwrapped request context leaked the header and the token into the output;
+  the framework's were clean in the output, the report and `test-results/`. `meta/redact.test.ts` guards it.

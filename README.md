@@ -53,7 +53,7 @@ Without them you can still run `npm run check` (typecheck, lint, format and the 
 | Command | What it does |
 | --- | --- |
 | `npm test` | Every spec against dev |
-| `npx playwright test --grep @smoke` | Only tests tagged `@smoke` (also `@regression`) |
+| `npx playwright test --grep @smoke` | Only tests tagged `@smoke` (or `@regression`, or `@http`) |
 | `npx playwright test tests/bookmarks.spec.ts --repeat-each=5` | One spec, five times over, to show it isn't flaky |
 | `npm run check` | Typecheck, lint, format check and config meta-tests; needs no credentials |
 | `npm run format` | Formats the code with Prettier |
@@ -80,8 +80,12 @@ Some of the choices behind it:
   the report), and comes out the same again with `FAKER_SEED=<seed from the report> npm test`.
 - **Role and label locators only**, enforced by ESLint, so the tests read like a user and catch accessibility gaps.
 - **Every journey ends with an axe scan** (WCAG 2.2 AA) and a check that the page doesn't scroll sideways.
-- **Every test fails on a console error or an uncaught page error**, through an automatic fixture.
-- **No traces in CI.** Traces record request headers, which hold dev's credentials, so a public CI run records none.
+- **Every test fails on a console error or an uncaught page error**, checked by the framework's `context` fixture.
+- **HTTP-level checks** (`@http`), such as security headers and the session cookie, run once in their own project,
+  without a browser.
+- **No traces in CI, and redacted API errors.** Traces record request headers, which hold dev's credentials, so a
+  public CI run records none; and a failed API call's error, which lists those headers, is redacted before any
+  reporter prints it.
   Locally, traces are kept on failure: don't share a local report.
 
 ## License

@@ -8,7 +8,8 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every 
 [tests/bookmarks.spec.ts](tests/bookmarks.spec.ts) is the model. A new spec follows its patterns:
 
 - **Import `test` and `expect` from `src/fixtures/test.ts`**, never from `@playwright/test`.
-- **One journey per file**, named after what the user does. Tag the describe or test `@smoke` or `@regression`.
+- **One journey per file**, named after what the user does. Tag the describe or test `@smoke` or `@regression`;
+  checks that need no browser (headers, cookies, status codes) are `@http`, and run in the `http` project only.
 - **Get a user from the `testUser` fixture.** It creates a fresh account through the test API, signs it in by
   cookie, and deletes it after the test. A test that only needs the session writes `testUser: _signedIn`. A test
   that needs Pro says `test.use({ testUserOptions: { plan: 'pro' } })`. Drive the sign-in form only in a test whose
@@ -25,8 +26,9 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md): its rules apply to every 
 - **End each journey with the accessibility and overflow checks**, once, at its richest state:
   `expect(await scanAccessibility()).toEqual([])` and `await expect.poll(horizontalOverflow).toBe(0)`. A real
   Folio accessibility bug goes in `KNOWN_ISSUES` in `src/checks/accessibility.ts`, as narrowly as possible.
-- **Every test fails on a console error or an uncaught page error.** That check is automatic. An error Folio really
-  logs goes in `KNOWN_CONSOLE_ERRORS` in `src/checks/console-errors.ts`, as narrowly as possible.
+- **Every test fails on a console error or an uncaught page error.** The framework's `context` fixture checks it.
+  An error Folio really logs goes in `KNOWN_CONSOLE_ERRORS` in `src/checks/console-errors.ts`, as narrowly as
+  possible.
 - **Skip only with a condition and a reason**: `test.skip(condition, 'why')`. ESLint rejects a bare `test.skip`.
 
 Explore the real dev site before writing a selector or an assertion. Don't guess text or behaviour.
@@ -37,7 +39,8 @@ Explore the real dev site before writing a selector or an assertion. Don't guess
   no tests, and no stubs. Stop a journey before it reaches one.
 - **Mocking** only for the five cases in [AGENTS.md](AGENTS.md#mocking-is-limited-to-these-cases).
 - **Secrets** stay in `.env` and GitHub Secrets. Never commit, log or paste them, and never share a local report:
-  its traces hold them.
+  its traces hold them. Make API calls with the `request` fixture or `context.request` from `src/fixtures/test.ts`,
+  whose errors are redacted; a request context made any other way prints the credentials when a call fails.
 
 ## Before a pull request
 
