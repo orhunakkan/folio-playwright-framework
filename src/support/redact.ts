@@ -7,10 +7,17 @@ import { env } from '../config/env.ts';
  * reporter's annotations and the HTML report, all public in CI. So the framework redacts it before any reporter
  * sees it.
  */
-const SECRETS = [
-  Buffer.from(`${env.DEV_BASIC_USER}:${env.DEV_BASIC_PASS}`).toString('base64'),
-  env.DEV_BASIC_PASS,
-  env.FOLIO_TEST_API_TOKEN,
+/**
+ * Every secret value, by name. `DEV_BASIC_USER` on its own isn't one: the basic-auth header covers it, and alone it
+ * is too short and common to look for.
+ */
+export const SECRETS: { name: string; value: string }[] = [
+  {
+    name: 'basic-auth header (DEV_BASIC_USER:DEV_BASIC_PASS)',
+    value: Buffer.from(`${env.DEV_BASIC_USER}:${env.DEV_BASIC_PASS}`).toString('base64'),
+  },
+  { name: 'DEV_BASIC_PASS', value: env.DEV_BASIC_PASS },
+  { name: 'FOLIO_TEST_API_TOKEN', value: env.FOLIO_TEST_API_TOKEN },
 ];
 
 const REDACTED = '[redacted]';
@@ -18,7 +25,7 @@ const REDACTED = '[redacted]';
 /** Replaces every secret in `text`, and the value of any credential header, with `[redacted]`. */
 export function redact(text: string): string {
   let redacted = text.replace(/^(\s*(?:- )?(?:authorization|x-folio-test-token|cookie):).*$/gim, `$1 ${REDACTED}`);
-  for (const secret of SECRETS) redacted = redacted.replaceAll(secret, REDACTED);
+  for (const { value } of SECRETS) redacted = redacted.replaceAll(value, REDACTED);
   return redacted;
 }
 
