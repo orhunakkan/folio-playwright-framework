@@ -1,0 +1,58 @@
+// @ts-check
+import js from '@eslint/js';
+import prettier from 'eslint-config-prettier';
+import playwright from 'eslint-plugin-playwright';
+import { defineConfig, globalIgnores } from 'eslint/config';
+import tseslint from 'typescript-eslint';
+
+export default defineConfig(
+  globalIgnores(['node_modules/', 'playwright-report/', 'test-results/', 'blob-report/', 'playwright/.cache/']),
+
+  js.configs.recommended,
+  tseslint.configs.strictTypeChecked,
+  tseslint.configs.stylisticTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    // This file is plain JS (ESLint loads it without a TS loader), so it is outside the TS project.
+    files: ['**/*.js'],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
+
+  {
+    files: ['tests/**/*.ts', 'src/**/*.ts'],
+    extends: [playwright.configs['flat/recommended']],
+    rules: {
+      // Role and label locators only: resilient, and accessible by design.
+      'playwright/no-raw-locators': 'error',
+      'playwright/no-restricted-locators': [
+        'error',
+        [
+          { type: 'getByText', message: 'Use getByRole or getByLabel.' },
+          { type: 'getByTestId', message: 'Use getByRole or getByLabel.' },
+          { type: 'getByPlaceholder', message: 'Use getByLabel.' },
+          { type: 'getByAltText', message: 'Use getByRole("img", { name }).' },
+          { type: 'getByTitle', message: 'Use getByRole or getByLabel.' },
+        ],
+      ],
+      'playwright/no-element-handle': 'error',
+      'playwright/no-wait-for-timeout': 'error',
+      'playwright/no-networkidle': 'error',
+      'playwright/no-force-option': 'error',
+      'playwright/no-nth-methods': 'error',
+      'playwright/no-skipped-test': ['error', { allowConditional: true }],
+      'playwright/require-annotation-reason': 'error',
+      'playwright/prefer-web-first-assertions': 'error',
+      'playwright/missing-playwright-await': 'error',
+    },
+  },
+
+  // Turns off formatting rules that would fight Prettier. Keep last.
+  prettier,
+);

@@ -1,0 +1,8 @@
+package-lock.json
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# Markdown is hand-formatted (compact tables)
+*.md
