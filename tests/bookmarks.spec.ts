@@ -1,4 +1,5 @@
 import { expect, test } from '../src/fixtures/test.ts';
+import { failNextRequest } from '../src/mocking/error-responses.ts';
 
 const BOOK = 'pride-and-prejudice';
 
@@ -48,6 +49,26 @@ test.describe('Bookmarks', { tag: '@regression' }, () => {
 
     await expect(readerPage.panel.bookmarks).toHaveCount(1);
     await expect(readerPage.panel.bookmark('Ch. 2 · p. 1')).toBeVisible();
+  });
+
+  test('a bookmark that fails to save says so, and saves when tried again', async ({
+    page,
+    readerPage,
+    testUser: _signedIn,
+  }) => {
+    await failNextRequest(page, '**/account/bookmarks/new', 500);
+    await readerPage.open(BOOK, 1);
+
+    const failed = await readerPage.bookmarkThisPage();
+
+    expect(failed).toHaveStatus(500);
+    await expect(readerPage.notices.filter({ hasText: 'Couldn’t save that. Try again.' })).toBeVisible();
+    await expect(readerPage.bookmarkButton).toHaveAttribute('aria-pressed', 'false');
+
+    const saved = await readerPage.bookmarkThisPage();
+
+    expect(saved).toHaveStatus(201);
+    await expect(readerPage.bookmarkButton).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('the reader with its bookmarks open is accessible and fits the screen', async ({

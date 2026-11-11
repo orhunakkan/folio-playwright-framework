@@ -17,7 +17,10 @@ export class BookPanel {
   readonly bookmarks: Locator;
   /** Named `Highlights <count>` once there are highlights, e.g. `Highlights 1`. */
   readonly highlightsTab: Locator;
-  /** One entry per highlight on the page on screen, in the Highlights tab. */
+  /**
+   * One entry per highlight on the page on screen, in the Highlights tab. Each starts with its colour, e.g.
+   * `Yellow highlight:`, read out to screen readers.
+   */
   readonly highlights: Locator;
   /** The note box of the highlight being noted, and its Save button. */
   readonly noteBox: Locator;
@@ -57,10 +60,16 @@ export class BookPanel {
 
   /**
    * Opens the panel if the screen is too narrow to show it. Which layout the reader uses is decided by CSS, so it is
-   * settled as soon as the page has loaded. A no-op on wide screens, and when the dialog is already open (pressing
+   * settled once the reader has rendered. A no-op on wide screens, and when the dialog is already open (pressing
    * Note opens it).
    */
   async open(): Promise<void> {
+    // Wait for the reader to show one layout or the other: right after a reload, neither may be on screen yet.
+    await this.page
+      .getByRole('complementary', { name: 'Book contents panel' })
+      .or(this.openButton)
+      .filter({ visible: true })
+      .waitFor();
     if (!(await this.openButton.isVisible())) return;
     if ((await this.openButton.getAttribute('aria-expanded')) === 'true') return;
 
@@ -91,6 +100,19 @@ export class BookPanel {
 
   async goToBookmark(place: string): Promise<void> {
     await test.step(`go to bookmark ${place}`, () => this.bookmark(place).getByRole('link').click(), { box: true });
+  }
+
+  /** Deletes a highlight from the Highlights tab, and returns Folio's response once the deletion is saved. */
+  async deleteHighlight(passage: string): Promise<Response> {
+    return test.step(
+      `delete the highlight "${passage.slice(0, 30)}…"`,
+      async () => {
+        const saved = this.page.waitForResponse(isPostTo(/^\/account\/highlights\/(?!new$)[^/]+$/));
+        await this.highlight(passage).getByRole('button', { name: 'Delete' }).click();
+        return saved;
+      },
+      { box: true },
+    );
   }
 
   /** Removes a bookmark, and returns Folio's response once the removal is saved. */

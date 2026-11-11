@@ -1,5 +1,6 @@
 import { test, type Locator, type Page, type Response } from '@playwright/test';
 import { BookPanel } from '../components/book-panel.ts';
+import { ReadAloudPlayer } from '../components/read-aloud-player.ts';
 import { isPostTo } from '../support/network.ts';
 
 /** The Folio bug `addNote` works around, as it is noted on a test that hits it. */
@@ -10,10 +11,15 @@ export const NOTE_BOX_RACE =
 export class ReaderPage {
   readonly page: Page;
   readonly panel: BookPanel;
+  readonly player: ReadAloudPlayer;
   /** Pressed (`aria-pressed="true"`) when the page on screen is bookmarked. */
   readonly bookmarkButton: Locator;
   /** The chapter's text. */
   readonly text: Locator;
+  /** The chapter's title, e.g. `Chapter 1`. */
+  readonly chapterHeading: Locator;
+  /** Messages the reader announces, e.g. `Couldn’t save that. Try again.` */
+  readonly notices: Locator;
   /** Turns to the next page of the book. */
   readonly nextPageButton: Locator;
   /**
@@ -21,14 +27,23 @@ export class ReaderPage {
    * which call third-party services: tests never press them (see AGENTS.md).
    */
   readonly noteButton: Locator;
+  /** In the same toolbar: highlights the selection in yellow, the only colour the reader offers. */
+  readonly highlightButton: Locator;
+  /** Starts reading the page aloud, with the device's voice. */
+  readonly readAloudButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.panel = new BookPanel(page);
+    this.player = new ReadAloudPlayer(page);
     this.bookmarkButton = page.getByRole('button', { name: 'Bookmark this page' });
     this.text = page.getByRole('article');
+    this.chapterHeading = this.text.getByRole('heading', { level: 1 });
+    this.notices = page.getByRole('status');
     this.nextPageButton = page.getByRole('button', { name: 'Next page' });
     this.noteButton = page.getByRole('button', { name: 'Note', exact: true });
+    this.highlightButton = page.getByRole('button', { name: 'Highlight', exact: true });
+    this.readAloudButton = page.getByRole('button', { name: 'Read aloud', exact: true });
   }
 
   /** A paragraph of the chapter, by text it contains. */
@@ -65,6 +80,24 @@ export class ReaderPage {
       },
       { box: true },
     );
+  }
+
+  /** Selects a whole paragraph and highlights it, and returns Folio's response once the highlight is saved. */
+  async highlight(passage: string): Promise<Response> {
+    return test.step(
+      `highlight "${passage.slice(0, 30)}…"`,
+      async () => {
+        await this.paragraph(passage).selectText();
+        const saved = this.page.waitForResponse(isPostTo('/account/highlights/new'));
+        await this.highlightButton.click();
+        return saved;
+      },
+      { box: true },
+    );
+  }
+
+  async readAloud(): Promise<void> {
+    await test.step('read the page aloud', () => this.readAloudButton.click(), { box: true });
   }
 
   /**

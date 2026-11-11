@@ -6,6 +6,7 @@ import { watchConsoleErrors } from '../checks/console-errors.ts';
 import { readWebVitals, startWebVitals, type WebVitals } from '../checks/web-vitals.ts';
 import { FAKER_SEED } from '../config/run.ts';
 import { TestData, testSeed } from '../data/test-data.ts';
+import { BookPage } from '../pages/book-page.ts';
 import { HighlightsPage } from '../pages/highlights-page.ts';
 import { HomePage } from '../pages/home-page.ts';
 import { LibraryPage } from '../pages/library-page.ts';
@@ -43,6 +44,7 @@ interface Fixtures {
   testData: TestData;
 
   homePage: HomePage;
+  bookPage: BookPage;
   libraryPage: LibraryPage;
   readerPage: ReaderPage;
   highlightsPage: HighlightsPage;
@@ -118,6 +120,10 @@ export const test = base.extend<Fixtures>({
 
   homePage: async ({ page }, use) => {
     await use(new HomePage(page));
+  },
+
+  bookPage: async ({ page }, use) => {
+    await use(new BookPage(page));
   },
 
   libraryPage: async ({ page }, use) => {
