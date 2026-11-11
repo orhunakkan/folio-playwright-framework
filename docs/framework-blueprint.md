@@ -25,7 +25,7 @@ third-party testing, limited mocking, public repository.
 | | Mocking | One small folder with only the five allowed cases | Follows AGENTS.md, nothing more | |
 | | Accessibility | Axe scan per journey | A11y is part of "done" | ✓ |
 | | Responsive | Desktop, phone and tablet projects; horizontal overflow check | Proves layouts hold up | ✓ |
-| | Cross-browser | Chromium, Firefox and WebKit on desktop | Wider coverage than Folio's own suite | ✓ |
+| | Cross-browser | Chromium and Firefox on desktop; WebKit when Playwright's basic-auth bug is fixed (see step 10) | Wider coverage than Folio's own suite | ✓ |
 | | Tags & skips | `@smoke`, `@regression`, `@http`; conditional skips with reasons | Targeted runs, honest skips | ✓ |
 | | Reporting in tests | `test.step()` in page objects | Reports and traces read like a story | ✓ |
 | | Guards | `forbidOnly`, plus a meta-test that checks the config | The suite can't silently rot | ✓ |
@@ -34,7 +34,7 @@ third-party testing, limited mocking, public repository.
 | | Reporting | HTML report published to GitHub Pages | Visitors can see real results | ✓ |
 | | Code quality | Strict TS, ESLint + `eslint-plugin-playwright`, Prettier, Husky, Renovate | Clean code and a current Playwright | ✓ |
 | | Docs | README quickstart, CONTRIBUTING, ADRs | Shows judgment, not just code | ✓ |
-| **Showcase** | Visual | Screenshot tests on stable pages (home, catalogue) with masking | Catches visual regressions | |
+| **Showcase** | Visual | Screenshot tests on stable pages (home, library) with masking | Catches visual regressions | |
 | | API layer | Typed API client + zod response schemas | Shows API testing alongside UI | |
 | | Assertions | A few custom matchers (`toBeSignedIn()`) | Domain-language tests | |
 | | Performance | Web-vitals budgets, nightly | Covers more than functional testing | |
@@ -142,11 +142,18 @@ Build one thin slice that works end to end, then widen it. Each step ends in som
 | 9. `@http` | The `@http` tag, starting with the Showcase security header checks | `--grep @http` runs the header checks on their own | ✓ |
 | 10. Devices and browsers | Phone and tablet projects, Firefox and WebKit on desktop, every run in the pinned image (`npm test`); the reader page object opens its hidden side panel on small screens | Every spec passes in every project, locally and in CI | ✓, without WebKit (see step 10's notes) |
 | 11. CI at scale | Sharding with a merged report, a required PR check, the HTML report on GitHub Pages, Renovate | A pull request can't merge red, and the latest report is on GitHub Pages | ✓ |
+| 12. Flakiness | A CI job on pull requests that runs only the specs the PR changed, with `--repeat-each=5`; `CI passed` requires it | A PR that changes a spec runs it five times in CI, and the PR can't merge if a repeat fails | |
+| 13. Visual | Screenshot tests on stable pages (home, library) with dynamic parts masked; baselines made in the pinned image | They pass in every browser project, locally and in CI, and a deliberate visual change fails them | |
+| 14. API layer | A typed client with zod response schemas for Folio's own endpoints, alongside the UI tests | An `@api` spec checks real responses against the schemas | |
+| 15. Custom matchers | A few domain matchers, e.g. `toBeSignedIn()`, via `expect.extend` in `src/fixtures/test.ts` | Used in at least two specs, with readable failure messages | |
+| 16. Performance | Web-vitals budgets (LCP, CLS, INP) measured in the browser, run nightly | The nightly run records the metrics in the report and fails when one is over budget | |
+| 17. AI | Playwright's test agents (planner, generator, healer), set up as Playwright documents them, with docs on using them within AGENTS.md | The agent files are committed, the docs explain them, and one plan made with them for a real journey is in the repo | |
+| 18. More journeys + mocking | New journeys (e.g. highlights, reading settings, search, offline reading, read-aloud), building `src/mocking/` with the first test that needs one of the five allowed cases | The Mocking row holds only cases real specs use, and each case has a spec | |
 
-Steps 1–5 built the foundation, and steps 6–11 finish the Core tier. The mocking folder is not a step: it is built
-with the first test that needs one of the five allowed cases. The Showcase rows follow Core. More journeys follow
-the patterns from steps 1–4 throughout. The repository stayed local until step 5, so the first public commit was
-already in good shape.
+Steps 1–5 built the foundation, and steps 6–11 finish the Core tier. Steps 12–17 build the open Showcase rows, and
+step 18 adds journeys and, with the first test that needs one of the five allowed cases, the mocking folder (the
+Core Mocking row). More journeys follow the patterns from steps 1–4 throughout. The repository stayed local until
+step 5, so the first public commit was already in good shape.
 
 ## Open questions
 
